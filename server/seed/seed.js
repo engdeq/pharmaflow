@@ -197,11 +197,19 @@ async function seedDatabase() {
       username: "admin",
       email: "admin@pharmacy.local",
       password: hashed,
-      fullName: "Super Admin",
+      fullName: "System Developer",
       roles: [superAdmin._id],
       status: "active",
+      isProtected: true,
     });
-    console.log("Super Admin created: admin / Admin@123");
+    console.log("Protected developer created: admin / Admin@123");
+  } else if (!admin.isProtected) {
+    admin.isProtected = true;
+    admin.fullName = admin.fullName || "System Developer";
+    if (superAdmin) admin.roles = [superAdmin._id];
+    admin.status = "active";
+    await admin.save();
+    console.log("Admin account locked as protected developer");
   }
 
   return { admin };

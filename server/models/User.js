@@ -30,6 +30,8 @@ const userSchema = new mongoose.Schema(
       enum: ["active", "inactive"],
       default: "active",
     },
+    /** Locked system account (developer/engineer) — cannot edit, disable, or delete */
+    isProtected: { type: Boolean, default: false },
     lastLogin: { type: Date, default: null },
     resetToken: { type: String, default: null },
     resetTokenExpires: { type: Date, default: null },

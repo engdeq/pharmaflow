@@ -63,7 +63,16 @@ router.put(
     const prev = await Role.findById(req.params.id);
     if (!prev) return fail(res, "Role not found.", 404);
 
-    const role = await Role.findByIdAndUpdate(req.params.id, req.body, {
+    const updates = { ...req.body };
+    if (prev.isSystem) {
+      delete updates.name;
+      delete updates.isSystem;
+      if (updates.isActive === false) {
+        return fail(res, "System roles cannot be deactivated.", 403);
+      }
+    }
+
+    const role = await Role.findByIdAndUpdate(req.params.id, updates, {
       new: true,
     }).populate("permissions");
 

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import PageHeader from "../../components/ui/PageHeader";
 import Modal from "../../components/ui/Modal";
 import Skeleton from "../../components/ui/Skeleton";
+import StatusSwitch from "../../components/ui/StatusSwitch";
 import { api } from "../../services/api";
 import { useToast } from "../../contexts/ToastContext";
 
@@ -15,6 +16,7 @@ export default function RolesPage() {
   const [selected, setSelected] = useState([]);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [isActive, setIsActive] = useState(true);
 
   const load = async () => {
     setLoading(true);
@@ -37,6 +39,7 @@ export default function RolesPage() {
     setEditing(role);
     setName(role.name);
     setDescription(role.description || "");
+    setIsActive(role.isActive !== false);
     setSelected((role.permissions || []).map((p) => p._id || p));
     setOpen(true);
   };
@@ -55,7 +58,7 @@ export default function RolesPage() {
 
   const save = async () => {
     try {
-      const body = { name, description, permissions: selected };
+      const body = { name, description, permissions: selected, isActive };
       if (editing) {
         await api(`/roles/${editing._id}`, { method: "PUT", body });
         toast.success("Role updated");
@@ -64,6 +67,35 @@ export default function RolesPage() {
         toast.success("Role created");
       }
       setOpen(false);
+      load();
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
+  const toggleActive = async (role, next) => {
+    if (role.isSystem && !next) {
+      toast.error("System roles cannot be deactivated");
+      return;
+    }
+    try {
+      await api(`/roles/${role._id}`, { method: "PUT", body: { isActive: next } });
+      toast.success(next ? "Role activated" : "Role deactivated");
+      load();
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
+  const remove = async (role) => {
+    if (role.isSystem) {
+      toast.error("System roles cannot be deleted");
+      return;
+    }
+    if (!window.confirm(`Delete role ${role.name}?`)) return;
+    try {
+      await api(`/roles/${role._id}`, { method: "DELETE" });
+      toast.success("Role deleted");
       load();
     } catch (err) {
       toast.error(err.message);
@@ -83,6 +115,7 @@ export default function RolesPage() {
               setEditing(null);
               setName("");
               setDescription("");
+              setIsActive(true);
               setSelected([]);
               setOpen(true);
             }}
@@ -111,15 +144,33 @@ export default function RolesPage() {
                   <tr key={r._id}>
                     <td>
                       <strong>{r.name}</strong>
+                      {r.isSystem ? (
+                        <div style={{ color: "var(--primary)", fontSize: 11, fontWeight: 700 }}>
+                          System · Locked
+                        </div>
+                      ) : null}
                       <div style={{ color: "var(--muted)", fontSize: 12 }}>{r.description}</div>
                     </td>
                     <td>{r.usersCount}</td>
                     <td>{r.permissions?.length || 0}</td>
-                    <td>{r.isActive ? "Active" : "Inactive"}</td>
+                    <td>
+                      <StatusSwitch
+                        checked={r.isActive !== false}
+                        disabled={r.isSystem}
+                        onChange={(on) => toggleActive(r, on)}
+                      />
+                    </td>
                     <td>
                       <button type="button" className="btn btn-ghost" onClick={() => openEdit(r)}>
-                        Edit Permissions
-                      </button>
+                        Edit
+                      </button>{" "}
+                      {!r.isSystem ? (
+                        <button type="button" className="btn btn-danger" onClick={() => remove(r)}>
+                          Delete
+                        </button>
+                      ) : (
+                        <span style={{ color: "var(--muted)", fontSize: 12 }}>Protected</span>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -153,10 +204,19 @@ export default function RolesPage() {
             Description
             <input value={description} onChange={(e) => setDescription(e.target.value)} />
           </label>
+          {!editing?.isSystem ? (
+            <label style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              Active
+              <StatusSwitch checked={isActive} onChange={setIsActive} />
+            </label>
+          ) : null}
           <div>
             <h4>Permission Matrix</h4>
             {Object.entries(grouped).map(([module, perms]) => (
-              <div key={module} style={{ marginBottom: 12, border: "1px solid var(--border)", borderRadius: 12, padding: 10 }}>
+              <div
+                key={module}
+                style={{ marginBottom: 12, border: "1px solid var(--border)", borderRadius: 12, padding: 10 }}
+              >
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
                   <strong style={{ textTransform: "capitalize" }}>{module}</strong>
                   <div>

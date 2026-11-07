@@ -114,6 +114,53 @@ textarea {
   color: white;
 }
 
+.status-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 3px 10px 3px 3px;
+  border: none;
+  border-radius: 999px;
+  background: #dbe3f4;
+  color: #64748b;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.status-switch.on {
+  background: #748cf8;
+  color: #ffffff;
+  flex-direction: row-reverse;
+  padding: 3px 3px 3px 10px;
+}
+
+.status-switch.disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.status-switch-knob {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(23, 32, 51, 0.18);
+  flex-shrink: 0;
+}
+
+.status-switch-label {
+  font-size: 11px;
+  font-weight: 700;
+  min-width: 52px;
+  text-align: center;
+}
+
+[data-theme="dark"] .status-switch:not(.on) {
+  background: #334155;
+  color: #94a3b8;
+}
+
 .icon-btn {
   width: 38px;
   height: 38px;

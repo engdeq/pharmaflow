@@ -9,11 +9,15 @@ const { writeAudit } = require("../services/auditService");
 const router = express.Router();
 router.use(authenticate, requirePermission("users.manage"));
 
+function isLockedUser(user) {
+  return Boolean(user?.isProtected);
+}
+
 router.get(
   "/",
   asyncHandler(async (req, res) => {
     const page = Math.max(1, parseInt(req.query.page || "1", 10));
-    const limit = Math.min(50, parseInt(req.query.limit || "10", 10));
+    const limit = Math.min(100, parseInt(req.query.limit || "50", 10));
     const q = (req.query.q || "").trim();
     const role = req.query.role;
     const filter = {};
@@ -28,9 +32,9 @@ router.get(
 
     const [items, total] = await Promise.all([
       User.find(filter)
-        .populate("roles", "name")
+        .populate("roles", "name isSystem")
         .select("-password -resetToken")
-        .sort({ createdAt: -1 })
+        .sort({ isProtected: -1, createdAt: -1 })
         .skip((page - 1) * limit)
         .limit(limit),
       User.countDocuments(filter),
@@ -60,6 +64,7 @@ router.post(
       phone: phone || "",
       roles: roles || [],
       status: status || "active",
+      isProtected: false,
     });
 
     await writeAudit({
@@ -72,7 +77,7 @@ router.post(
     });
 
     const populated = await User.findById(user._id)
-      .populate("roles", "name")
+      .populate("roles", "name isSystem")
       .select("-password");
     return ok(res, populated, "User created.", 201);
   })
@@ -83,15 +88,19 @@ router.put(
   asyncHandler(async (req, res) => {
     const prev = await User.findById(req.params.id);
     if (!prev) return fail(res, "User not found.", 404);
+    if (isLockedUser(prev)) {
+      return fail(res, "Protected developer account cannot be changed.", 403);
+    }
 
     const updates = { ...req.body };
     delete updates.password;
+    delete updates.isProtected;
     if (updates.email) updates.email = updates.email.toLowerCase();
 
     const user = await User.findByIdAndUpdate(req.params.id, updates, {
       new: true,
     })
-      .populate("roles", "name")
+      .populate("roles", "name isSystem")
       .select("-password");
 
     await writeAudit({
@@ -114,6 +123,9 @@ router.post(
     const password = req.body.password || "ChangeMe@123";
     const user = await User.findById(req.params.id);
     if (!user) return fail(res, "User not found.", 404);
+    if (isLockedUser(user)) {
+      return fail(res, "Protected developer account password cannot be reset here.", 403);
+    }
     user.password = await bcrypt.hash(password, 10);
     await user.save();
     await writeAudit({
@@ -133,8 +145,12 @@ router.delete(
     if (String(req.user._id) === req.params.id) {
       return fail(res, "You cannot delete your own account.", 400);
     }
-    const user = await User.findByIdAndDelete(req.params.id);
+    const user = await User.findById(req.params.id);
     if (!user) return fail(res, "User not found.", 404);
+    if (isLockedUser(user)) {
+      return fail(res, "Protected developer account cannot be deleted.", 403);
+    }
+    await user.deleteOne();
     await writeAudit({
       user: req.user,
       action: "delete",

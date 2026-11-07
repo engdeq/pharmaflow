@@ -2,8 +2,19 @@ import { useEffect, useState } from "react";
 import PageHeader from "../../components/ui/PageHeader";
 import Modal from "../../components/ui/Modal";
 import Skeleton from "../../components/ui/Skeleton";
+import StatusSwitch from "../../components/ui/StatusSwitch";
 import { api } from "../../services/api";
 import { useToast } from "../../contexts/ToastContext";
+
+const emptyForm = {
+  username: "",
+  email: "",
+  password: "",
+  fullName: "",
+  phone: "",
+  roles: [],
+  status: "active",
+};
 
 export default function UsersPage() {
   const toast = useToast();
@@ -11,20 +22,13 @@ export default function UsersPage() {
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({
-    username: "",
-    email: "",
-    password: "",
-    fullName: "",
-    phone: "",
-    roles: [],
-    status: "active",
-  });
+  const [editing, setEditing] = useState(null);
+  const [form, setForm] = useState(emptyForm);
 
   const load = async () => {
     setLoading(true);
     try {
-      const [users, roleRes] = await Promise.all([api("/users"), api("/roles")]);
+      const [users, roleRes] = await Promise.all([api("/users?limit=100"), api("/roles")]);
       setItems(users.data.items || []);
       setRoles(roleRes.data || []);
     } catch (err) {
@@ -38,10 +42,47 @@ export default function UsersPage() {
     load();
   }, []);
 
+  const openCreate = () => {
+    setEditing(null);
+    setForm(emptyForm);
+    setOpen(true);
+  };
+
+  const openEdit = (user) => {
+    if (user.isProtected) {
+      toast.error("Protected developer account cannot be edited");
+      return;
+    }
+    setEditing(user);
+    setForm({
+      username: user.username || "",
+      email: user.email || "",
+      password: "",
+      fullName: user.fullName || "",
+      phone: user.phone || "",
+      roles: (user.roles || []).map((r) => r._id || r),
+      status: user.status || "active",
+    });
+    setOpen(true);
+  };
+
   const save = async () => {
     try {
-      await api("/users", { method: "POST", body: form });
-      toast.success("User created");
+      if (editing) {
+        const body = {
+          username: form.username,
+          email: form.email,
+          fullName: form.fullName,
+          phone: form.phone,
+          roles: form.roles,
+          status: form.status,
+        };
+        await api(`/users/${editing._id}`, { method: "PUT", body });
+        toast.success("User updated");
+      } else {
+        await api("/users", { method: "POST", body: form });
+        toast.success("User created");
+      }
       setOpen(false);
       load();
     } catch (err) {
@@ -49,12 +90,17 @@ export default function UsersPage() {
     }
   };
 
-  const toggleStatus = async (user) => {
+  const toggleStatus = async (user, nextActive) => {
+    if (user.isProtected) {
+      toast.error("Protected developer account cannot be deactivated");
+      return;
+    }
     try {
       await api(`/users/${user._id}`, {
         method: "PUT",
-        body: { status: user.status === "active" ? "inactive" : "active" },
+        body: { status: nextActive ? "active" : "inactive" },
       });
+      toast.success(nextActive ? "User activated" : "User deactivated");
       load();
     } catch (err) {
       toast.error(err.message);
@@ -62,6 +108,10 @@ export default function UsersPage() {
   };
 
   const resetPassword = async (user) => {
+    if (user.isProtected) {
+      toast.error("Protected developer account cannot be reset");
+      return;
+    }
     try {
       await api(`/users/${user._id}/reset-password`, {
         method: "POST",
@@ -73,13 +123,28 @@ export default function UsersPage() {
     }
   };
 
+  const remove = async (user) => {
+    if (user.isProtected) {
+      toast.error("Protected developer account cannot be deleted");
+      return;
+    }
+    if (!window.confirm(`Delete user ${user.username}?`)) return;
+    try {
+      await api(`/users/${user._id}`, { method: "DELETE" });
+      toast.success("User deleted");
+      load();
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
   return (
     <div>
       <PageHeader
         title="Users"
-        subtitle="User accounts and role assignment"
+        subtitle="User accounts, edit, and active status"
         actions={
-          <button type="button" className="btn btn-primary" onClick={() => setOpen(true)}>
+          <button type="button" className="btn btn-primary" onClick={openCreate}>
             Add User
           </button>
         }
@@ -103,22 +168,43 @@ export default function UsersPage() {
               <tbody>
                 {items.map((u) => (
                   <tr key={u._id}>
-                    <td>{u.username}</td>
-                    <td>{u.email}</td>
-                    <td>{(u.roles || []).map((r) => r.name).join(", ")}</td>
                     <td>
-                      <span className={`badge badge-${u.status === "active" ? "success" : "danger"}`}>
-                        {u.status}
-                      </span>
+                      <strong>{u.username}</strong>
+                      {u.isProtected ? (
+                        <div style={{ color: "var(--primary)", fontSize: 11, fontWeight: 700 }}>
+                          System Developer · Locked
+                        </div>
+                      ) : null}
+                      {u.fullName ? (
+                        <div style={{ color: "var(--muted)", fontSize: 12 }}>{u.fullName}</div>
+                      ) : null}
+                    </td>
+                    <td>{u.email}</td>
+                    <td>{(u.roles || []).map((r) => r.name).join(", ") || "-"}</td>
+                    <td>
+                      <StatusSwitch
+                        checked={u.status === "active"}
+                        disabled={u.isProtected}
+                        onChange={(on) => toggleStatus(u, on)}
+                      />
                     </td>
                     <td>{u.lastLogin ? new Date(u.lastLogin).toLocaleString() : "-"}</td>
                     <td>
-                      <button type="button" className="btn btn-ghost" onClick={() => toggleStatus(u)}>
-                        Toggle
-                      </button>{" "}
-                      <button type="button" className="btn btn-ghost" onClick={() => resetPassword(u)}>
-                        Reset PW
-                      </button>
+                      {u.isProtected ? (
+                        <span style={{ color: "var(--muted)", fontSize: 12 }}>Protected</span>
+                      ) : (
+                        <>
+                          <button type="button" className="btn btn-ghost" onClick={() => openEdit(u)}>
+                            Edit
+                          </button>{" "}
+                          <button type="button" className="btn btn-ghost" onClick={() => resetPassword(u)}>
+                            Reset PW
+                          </button>{" "}
+                          <button type="button" className="btn btn-danger" onClick={() => remove(u)}>
+                            Delete
+                          </button>
+                        </>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -130,7 +216,7 @@ export default function UsersPage() {
 
       <Modal
         open={open}
-        title="Add User"
+        title={editing ? "Edit User" : "Add User"}
         onClose={() => setOpen(false)}
         footer={
           <>
@@ -144,16 +230,33 @@ export default function UsersPage() {
         }
       >
         <div className="form-grid">
-          {["username", "email", "password", "fullName", "phone"].map((name) => (
+          {["username", "email", "fullName", "phone"].map((name) => (
             <label key={name}>
               {name}
               <input
-                type={name === "password" ? "password" : "text"}
+                type="text"
                 value={form[name]}
                 onChange={(e) => setForm((p) => ({ ...p, [name]: e.target.value }))}
               />
             </label>
           ))}
+          {!editing ? (
+            <label>
+              password
+              <input
+                type="password"
+                value={form.password}
+                onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))}
+              />
+            </label>
+          ) : null}
+          <label>
+            Status
+            <select value={form.status} onChange={(e) => setForm((p) => ({ ...p, status: e.target.value }))}>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </label>
           <label style={{ gridColumn: "1 / -1" }}>
             Roles
             <select
