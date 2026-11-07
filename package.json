@@ -1,0 +1,16 @@
+{
+  "name": "pharmacy",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Pharmacy app with animated login/registration",
+  "scripts": {
+    "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
+    "dev:client": "npm run dev --prefix client",
+    "dev:server": "npm run dev --prefix server",
+    "start:server": "npm start --prefix server",
+    "build": "npm run build --prefix client"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.6"
+  }
+}

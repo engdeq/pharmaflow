@@ -1,0 +1,19 @@
+/* Global resets live in styles/theme.css. Keep this file for Vite entry compatibility. */
+
+@media print {
+  .admin-sidebar,
+  .admin-topbar,
+  .page-header-actions,
+  .toolbar,
+  .btn {
+    display: none !important;
+  }
+
+  .admin-shell {
+    display: block;
+  }
+
+  .admin-content {
+    padding: 0;
+  }
+}
