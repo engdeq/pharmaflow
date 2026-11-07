@@ -47,26 +47,6 @@ const PERMISSIONS = [
   ["audit.view", "audit", "view"],
 ];
 
-const MENUS = [
-  { name: "dashboard", label: "Dashboard", icon: "LayoutDashboard", url: "/dashboard", order: 1, permissionKey: "dashboard.view" },
-  { name: "pos", label: "Point of Sale", icon: "ShoppingCart", url: "/sales/pos", order: 2, permissionKey: "sales.create" },
-  { name: "medicines", label: "Medicines", icon: "Pill", url: "/medicines", order: 3, permissionKey: "medicines.view" },
-  { name: "categories", label: "Categories", icon: "Tags", url: "/categories", order: 4, permissionKey: "categories.view" },
-  { name: "inventory", label: "Inventory", icon: "Warehouse", url: "/inventory", order: 5, permissionKey: "inventory.view" },
-  { name: "expiry", label: "Expiry", icon: "AlarmClock", url: "/expiry", order: 6, permissionKey: "expiry.view" },
-  { name: "purchases", label: "Purchases", icon: "Truck", url: "/purchases", order: 7, permissionKey: "purchases.view" },
-  { name: "sales", label: "Sales History", icon: "Receipt", url: "/sales", order: 8, permissionKey: "sales.view" },
-  { name: "customers", label: "Customers", icon: "Users", url: "/customers", order: 9, permissionKey: "customers.view" },
-  { name: "suppliers", label: "Suppliers", icon: "Building2", url: "/suppliers", order: 10, permissionKey: "suppliers.view" },
-  { name: "reports", label: "Reports", icon: "BarChart3", url: "/reports", order: 11, permissionKey: "reports.view" },
-  { name: "users", label: "Users", icon: "UserCog", url: "/users", order: 12, permissionKey: "users.manage" },
-  { name: "roles", label: "Roles", icon: "Shield", url: "/roles", order: 13, permissionKey: "roles.manage" },
-  { name: "permissions", label: "Permissions", icon: "KeyRound", url: "/permissions", order: 14, permissionKey: "permissions.manage" },
-  { name: "menus", label: "Menus", icon: "Menu", url: "/menus", order: 15, permissionKey: "menus.manage" },
-  { name: "audit", label: "Audit Logs", icon: "ScrollText", url: "/audit", order: 16, permissionKey: "audit.view" },
-  { name: "settings", label: "Settings", icon: "Settings", url: "/settings", order: 17, permissionKey: "settings.manage" },
-];
-
 async function seedDatabase() {
   const permCount = await Permission.countDocuments();
   if (permCount === 0) {
@@ -196,9 +176,11 @@ async function seedDatabase() {
   }
 
   const menuCount = await Menu.countDocuments();
-  if (menuCount === 0) {
-    await Menu.insertMany(MENUS);
-    console.log("Menus seeded");
+  const nestedCount = await Menu.countDocuments({ parent: { $ne: null } });
+  if (menuCount === 0 || nestedCount === 0) {
+    const { seedHierarchicalMenus } = require("./resyncMenus");
+    await seedHierarchicalMenus();
+    console.log("Menus seeded (hierarchical)");
   }
 
   const settingsCount = await Settings.countDocuments();

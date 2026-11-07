@@ -2,6 +2,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   Bell,
   ChevronDown,
+  ChevronRight,
   LogOut,
   Menu as MenuIcon,
   Moon,
@@ -18,25 +19,52 @@ import { useTheme } from "../contexts/ThemeContext";
 import { DynamicIcon } from "../utils/icons";
 import "./AdminLayout.css";
 
-function MenuItems({ items, onNavigate, openIds, toggleOpen, collapsed }) {
+function pathMatches(url, pathname) {
+  if (!url) return false;
+  if (pathname === url) return true;
+  return pathname.startsWith(`${url}/`);
+}
+
+function hasActiveChild(item, pathname) {
+  if (pathMatches(item.url, pathname)) return true;
+  return (item.children || []).some((child) => hasActiveChild(child, pathname));
+}
+
+function MenuItems({
+  items,
+  onNavigate,
+  openIds,
+  toggleOpen,
+  collapsed,
+  pathname,
+  nested = false,
+}) {
   return (
-    <ul className="side-menu">
+    <ul className={nested ? "side-submenu" : "side-menu"}>
       {items.map((item) => {
         const hasChildren = item.children?.length > 0;
-        const isOpen = openIds.includes(item.id);
+        const isOpen = openIds.includes(String(item.id));
+        const childActive = hasActiveChild(item, pathname);
 
         if (hasChildren) {
           return (
-            <li key={item.id} className={isOpen ? "open" : ""}>
+            <li
+              key={item.id}
+              className={`side-item${isOpen ? " open" : ""}${childActive ? " child-active" : ""}`}
+            >
               <button
                 type="button"
-                className="side-group"
+                className={`side-group${childActive ? " active" : ""}`}
                 title={collapsed ? item.label : undefined}
-                onClick={() => toggleOpen(item.id)}
+                onClick={() => toggleOpen(String(item.id))}
               >
                 <DynamicIcon name={item.icon} size={18} />
                 <span>{item.label}</span>
-                <ChevronDown className="chevron" size={16} />
+                {isOpen ? (
+                  <ChevronDown className="chevron" size={16} />
+                ) : (
+                  <ChevronRight className="chevron" size={16} />
+                )}
               </button>
               <MenuItems
                 items={item.children}
@@ -44,21 +72,25 @@ function MenuItems({ items, onNavigate, openIds, toggleOpen, collapsed }) {
                 openIds={openIds}
                 toggleOpen={toggleOpen}
                 collapsed={collapsed}
+                pathname={pathname}
+                nested
               />
             </li>
           );
         }
 
         return (
-          <li key={item.id}>
+          <li key={item.id} className="side-item">
             {item.url ? (
               <NavLink
                 to={item.url}
+                end={item.url === "/dashboard"}
                 title={collapsed ? item.label : undefined}
                 className={({ isActive }) => `side-link${isActive ? " active" : ""}`}
                 onClick={onNavigate}
               >
-                <DynamicIcon name={item.icon} size={18} />
+                {nested ? <span className="tree-dot" aria-hidden="true" /> : null}
+                <DynamicIcon name={item.icon} size={nested ? 16 : 18} />
                 <span>{item.label}</span>
               </NavLink>
             ) : (
@@ -85,7 +117,8 @@ function splitMenus(menus) {
       key.includes("permission") ||
       key.includes("menu") ||
       key.includes("audit") ||
-      key.includes("setting")
+      key.includes("setting") ||
+      key.includes("administration")
     ) {
       admin.push(m);
     } else {
@@ -126,14 +159,16 @@ export default function AdminLayout() {
     const parents = [];
     const walk = (items, trail = []) => {
       items.forEach((item) => {
-        if (item.url && location.pathname.startsWith(item.url)) {
-          parents.push(...trail.map((t) => t.id));
+        if (item.url && pathMatches(item.url, location.pathname)) {
+          parents.push(...trail.map((t) => String(t.id)));
         }
         if (item.children?.length) walk(item.children, [...trail, item]);
       });
     };
     walk(menus || []);
-    if (parents.length) setOpenIds((prev) => [...new Set([...prev, ...parents])]);
+    if (parents.length) {
+      setOpenIds((prev) => [...new Set([...prev, ...parents])]);
+    }
   }, [menus, location.pathname]);
 
   const toggleOpen = (id) => {
@@ -169,6 +204,7 @@ export default function AdminLayout() {
             openIds={openIds}
             toggleOpen={toggleOpen}
             collapsed={collapsed}
+            pathname={location.pathname}
           />
           {admin.length ? <div className="side-section-label">System Administration</div> : null}
           <MenuItems
@@ -177,6 +213,7 @@ export default function AdminLayout() {
             openIds={openIds}
             toggleOpen={toggleOpen}
             collapsed={collapsed}
+            pathname={location.pathname}
           />
         </nav>
       </aside>

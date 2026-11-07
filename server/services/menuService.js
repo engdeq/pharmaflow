@@ -20,6 +20,23 @@ function buildTree(menus, parentId = null) {
     }));
 }
 
+function collectWithAncestors(allowed, allMenus) {
+  const byId = new Map(allMenus.map((m) => [String(m._id), m]));
+  const selected = new Map(allowed.map((m) => [String(m._id), m]));
+
+  for (const menu of allowed) {
+    let parentId = menu.parent ? String(menu.parent) : null;
+    while (parentId && !selected.has(parentId)) {
+      const parent = byId.get(parentId);
+      if (!parent) break;
+      selected.set(parentId, parent);
+      parentId = parent.parent ? String(parent.parent) : null;
+    }
+  }
+
+  return Array.from(selected.values());
+}
+
 async function getMenusForUser(permissions) {
   const menus = await Menu.find({ isActive: true }).lean();
   const isSuper = permissions.has("*");
@@ -29,7 +46,8 @@ async function getMenusForUser(permissions) {
     return isSuper || permissions.has(m.permissionKey);
   });
 
-  return buildTree(allowed, null);
+  const withParents = collectWithAncestors(allowed, menus);
+  return buildTree(withParents, null);
 }
 
 module.exports = { buildTree, getMenusForUser };
