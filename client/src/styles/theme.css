@@ -394,7 +394,7 @@ table.data-table tbody tr:hover {
   position: fixed;
   right: 18px;
   bottom: 18px;
-  z-index: 80;
+  z-index: 90;
   display: grid;
   gap: 8px;
 }
@@ -415,6 +415,130 @@ table.data-table tbody tr:hover {
 }
 .toast-info {
   background: var(--info);
+}
+
+.feedback-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(23, 32, 51, 0.45);
+  backdrop-filter: blur(6px);
+  animation: feedback-fade 0.18s ease;
+}
+
+.feedback-card {
+  width: min(360px, 92vw);
+  background: var(--card);
+  color: var(--text);
+  border-radius: 22px;
+  padding: 28px 24px 22px;
+  text-align: center;
+  box-shadow: 0 24px 60px rgba(23, 32, 51, 0.28);
+  border: 1px solid var(--border);
+  position: relative;
+  animation: feedback-pop 0.28s cubic-bezier(0.2, 0.9, 0.2, 1);
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+}
+
+.feedback-card strong {
+  font-size: 18px;
+  margin-top: 4px;
+}
+
+.feedback-card span {
+  color: var(--muted);
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.feedback-spinner {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, rgba(116, 140, 248, 0.18), rgba(116, 140, 248, 0.05));
+  color: var(--primary);
+}
+
+.feedback-check {
+  width: 78px;
+  height: 78px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(22, 163, 74, 0.12);
+  color: var(--success);
+  animation: feedback-check 0.35s ease;
+}
+
+.feedback-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 10px;
+  background: var(--soft-blue);
+  color: var(--muted);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.feedback-success .btn {
+  margin-top: 8px;
+  min-width: 120px;
+}
+
+.spin {
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes feedback-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes feedback-pop {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes feedback-check {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .badge {

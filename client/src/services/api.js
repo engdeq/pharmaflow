@@ -1,10 +1,47 @@
+import { getFeedbackHandlers } from "./feedbackBridge";
+
 const API_BASE = import.meta.env.VITE_API_URL || "/api";
+
+const MUTATING = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+const SILENT_PATHS = [
+  "/auth/me",
+  "/auth/my-menus",
+  "/auth/logout",
+  "/auth/login",
+  "/auth/register",
+  "/auth/forgot-password",
+  "/auth/reset-password",
+];
 
 function getToken() {
   return localStorage.getItem("pharmacy_token");
 }
 
+function shouldUseFeedback(path, options = {}) {
+  if (options.silent || options.skipFeedback) return false;
+  const method = String(options.method || "GET").toUpperCase();
+  if (!MUTATING.has(method)) return false;
+  return !SILENT_PATHS.some((p) => path === p || path.startsWith(`${p}?`));
+}
+
+function defaultLoadingMessage(method) {
+  if (method === "DELETE") return "Deleting…";
+  if (method === "POST") return "Saving…";
+  return "Updating…";
+}
+
+function defaultSuccessMessage(method, data) {
+  if (data?.message) return data.message;
+  if (method === "DELETE") return "Deleted successfully";
+  if (method === "POST") return "Saved successfully";
+  return "Updated successfully";
+}
+
 export async function api(path, options = {}) {
+  const method = String(options.method || "GET").toUpperCase();
+  const useFeedback = shouldUseFeedback(path, options);
+  const feedback = getFeedbackHandlers();
+
   const headers = {
     "Content-Type": "application/json",
     ...(options.headers || {}),
@@ -13,31 +50,62 @@ export async function api(path, options = {}) {
   const token = getToken();
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const response = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers,
-    body: options.body ? JSON.stringify(options.body) : undefined,
-  });
+  if (useFeedback) {
+    feedback.showLoading?.(options.loadingMessage || defaultLoadingMessage(method));
+  }
 
-  let data = {};
+  const {
+    silent: _silent,
+    skipFeedback: _skipFeedback,
+    loadingMessage: _loadingMessage,
+    successMessage: _successMessage,
+    success: _success,
+    body,
+    headers: _headers,
+    method: _method,
+    ...fetchOptions
+  } = options;
+
   try {
-    data = await response.json();
-  } catch {
-    data = { message: "Unexpected server response." };
-  }
+    const response = await fetch(`${API_BASE}${path}`, {
+      ...fetchOptions,
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : undefined,
+    });
 
-  if (response.status === 401) {
-    localStorage.removeItem("pharmacy_token");
-    if (!window.location.pathname.startsWith("/login") && window.location.pathname !== "/") {
-      window.location.href = "/";
+    let data = {};
+    try {
+      data = await response.json();
+    } catch {
+      data = { message: "Unexpected server response." };
     }
-  }
 
-  if (!response.ok || data.success === false) {
-    throw new Error(data.message || "Request failed.");
-  }
+    if (response.status === 401) {
+      localStorage.removeItem("pharmacy_token");
+      if (!window.location.pathname.startsWith("/login") && window.location.pathname !== "/") {
+        window.location.href = "/";
+      }
+    }
 
-  return data;
+    if (!response.ok || data.success === false) {
+      throw new Error(data.message || "Request failed.");
+    }
+
+    if (useFeedback) {
+      feedback.hideLoading?.();
+      if (options.success !== false) {
+        feedback.success?.(options.successMessage || defaultSuccessMessage(method, data));
+      }
+    }
+
+    return data;
+  } catch (err) {
+    if (useFeedback) {
+      feedback.hideLoading?.();
+    }
+    throw err;
+  }
 }
 
 export const authApi = {
@@ -63,5 +131,5 @@ export const authApi = {
     }),
   me: () => api("/auth/me"),
   myMenus: () => api("/auth/my-menus"),
-  logout: () => api("/auth/logout", { method: "POST" }),
+  logout: () => api("/auth/logout", { method: "POST", silent: true }),
 };

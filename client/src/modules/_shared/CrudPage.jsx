@@ -59,11 +59,17 @@ export default function CrudPage({
   const save = async () => {
     try {
       if (editing) {
-        await api(`${endpoint}/${editing._id}`, { method: "PUT", body: form });
-        toast.success("Updated successfully");
+        await api(`${endpoint}/${editing._id}`, {
+          method: "PUT",
+          body: form,
+          successMessage: "Updated successfully",
+        });
       } else {
-        await api(endpoint, { method: "POST", body: form });
-        toast.success("Created successfully");
+        await api(endpoint, {
+          method: "POST",
+          body: form,
+          successMessage: "Saved successfully",
+        });
       }
       setOpen(false);
       load();
@@ -75,8 +81,10 @@ export default function CrudPage({
   const remove = async (item) => {
     if (!window.confirm("Delete this record?")) return;
     try {
-      await api(`${endpoint}/${item._id}`, { method: "DELETE" });
-      toast.success("Deleted");
+      await api(`${endpoint}/${item._id}`, {
+        method: "DELETE",
+        successMessage: "Deleted successfully",
+      });
       load();
     } catch (err) {
       toast.error(err.message);
