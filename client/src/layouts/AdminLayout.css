@@ -87,16 +87,19 @@
   position: relative;
   margin: 4px 0 10px 26px;
   padding: 4px 0 4px 16px;
-  overflow: hidden;
-  max-height: 0;
-  opacity: 0;
   border-left: 2px solid #748cf8;
-  transition: max-height 0.28s ease, opacity 0.2s ease;
+  animation: submenu-in 0.2s ease;
 }
 
-.side-item.open > .side-submenu {
-  max-height: 720px;
-  opacity: 1;
+@keyframes submenu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .side-link,

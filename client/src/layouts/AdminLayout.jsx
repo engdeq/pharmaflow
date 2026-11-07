@@ -53,7 +53,7 @@ function MenuItems({
             >
               <button
                 type="button"
-                className={`side-group${childActive ? " active" : ""}`}
+                className={`side-group${childActive && isOpen ? " active" : ""}`}
                 title={collapsed ? item.label : undefined}
                 onClick={() => toggleOpen(String(item.id))}
               >
@@ -65,15 +65,17 @@ function MenuItems({
                   <ChevronRight className="chevron" size={16} />
                 )}
               </button>
-              <MenuItems
-                items={item.children}
-                onNavigate={onNavigate}
-                openIds={openIds}
-                toggleOpen={toggleOpen}
-                collapsed={collapsed}
-                pathname={pathname}
-                nested
-              />
+              {isOpen ? (
+                <MenuItems
+                  items={item.children}
+                  onNavigate={onNavigate}
+                  openIds={openIds}
+                  toggleOpen={toggleOpen}
+                  collapsed={collapsed}
+                  pathname={pathname}
+                  nested
+                />
+              ) : null}
             </li>
           );
         }
@@ -155,23 +157,23 @@ export default function AdminLayout() {
   }, [location.pathname]);
 
   useEffect(() => {
-    const parents = [];
+    // Keep only the parent chain for the current route (exclusive accordion).
+    let matchTrail = null;
     const walk = (items, trail = []) => {
-      items.forEach((item) => {
-        if (item.url && pathExactOrChild(item.url, location.pathname)) {
-          parents.push(...trail.map((t) => String(t.id)));
+      for (const item of items) {
+        if (item.url && (location.pathname === item.url || location.pathname.startsWith(`${item.url}/`))) {
+          matchTrail = trail.map((t) => String(t.id));
         }
         if (item.children?.length) walk(item.children, [...trail, item]);
-      });
+      }
     };
     walk(menus || []);
-    if (parents.length) {
-      setOpenIds((prev) => [...new Set([...prev, ...parents])]);
-    }
+    setOpenIds(matchTrail || []);
   }, [menus, location.pathname]);
 
   const toggleOpen = (id) => {
-    setOpenIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+    // One top-level group open at a time — selecting a new one closes the previous.
+    setOpenIds((prev) => (prev.includes(id) ? [] : [id]));
   };
 
   const handleLogout = async () => {
