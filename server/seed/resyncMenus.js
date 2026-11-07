@@ -1,5 +1,5 @@
 /**
- * Rebuild hierarchical menus to match PharmaCore sidebar structure.
+ * Rebuild hierarchical menus with sensible parent/submenu URLs.
  * Safe to run multiple times.
  */
 require("dotenv").config();
@@ -13,6 +13,7 @@ async function create(data) {
 async function seedHierarchicalMenus() {
   await Menu.deleteMany({});
 
+  // 1. Dashboard
   await create({
     name: "dashboard",
     label: "Dashboard",
@@ -23,6 +24,7 @@ async function seedHierarchicalMenus() {
     parent: null,
   });
 
+  // 2. Point of Sale
   const pos = await create({
     name: "pos_group",
     label: "Point of Sale (POS)",
@@ -51,40 +53,13 @@ async function seedHierarchicalMenus() {
     parent: pos._id,
   });
 
-  const store = await create({
-    name: "store_group",
-    label: "Pharmacy Store",
-    icon: "Store",
-    url: "",
-    order: 3,
-    permissionKey: "medicines.view",
-    parent: null,
-  });
-  await create({
-    name: "store_medicines",
-    label: "All Products",
-    icon: "Pill",
-    url: "/medicines",
-    order: 1,
-    permissionKey: "medicines.view",
-    parent: store._id,
-  });
-  await create({
-    name: "store_categories",
-    label: "Store Categories",
-    icon: "Layers",
-    url: "/categories",
-    order: 2,
-    permissionKey: "categories.view",
-    parent: store._id,
-  });
-
+  // 3. Medicines
   const medicines = await create({
     name: "medicines_group",
     label: "Medicines",
     icon: "Pill",
     url: "",
-    order: 4,
+    order: 3,
     permissionKey: "medicines.view",
     parent: null,
   });
@@ -98,40 +73,22 @@ async function seedHierarchicalMenus() {
     parent: medicines._id,
   });
   await create({
-    name: "medicines_add",
-    label: "Add Medicine",
-    icon: "SquarePlus",
-    url: "/medicines",
+    name: "categories",
+    label: "Categories",
+    icon: "Tags",
+    url: "/categories",
     order: 2,
-    permissionKey: "medicines.create",
+    permissionKey: "categories.view",
     parent: medicines._id,
   });
 
-  const categories = await create({
-    name: "categories_group",
-    label: "Categories",
-    icon: "Layers",
-    url: "",
-    order: 5,
-    permissionKey: "categories.view",
-    parent: null,
-  });
-  await create({
-    name: "categories",
-    label: "All Categories",
-    icon: "Tags",
-    url: "/categories",
-    order: 1,
-    permissionKey: "categories.view",
-    parent: categories._id,
-  });
-
+  // 4. Inventory
   const inventory = await create({
     name: "inventory_group",
     label: "Inventory",
     icon: "Package",
     url: "",
-    order: 6,
+    order: 4,
     permissionKey: "inventory.view",
     parent: null,
   });
@@ -154,12 +111,13 @@ async function seedHierarchicalMenus() {
     parent: inventory._id,
   });
 
+  // 5. Purchases
   const purchases = await create({
     name: "purchases_group",
     label: "Purchases",
     icon: "ShoppingBag",
     url: "",
-    order: 7,
+    order: 5,
     permissionKey: "purchases.view",
     parent: null,
   });
@@ -176,7 +134,7 @@ async function seedHierarchicalMenus() {
     name: "purchases_create",
     label: "Create Purchase",
     icon: "SquarePlus",
-    url: "/purchases",
+    url: "/purchases/create",
     order: 2,
     permissionKey: "purchases.create",
     parent: purchases._id,
@@ -185,18 +143,19 @@ async function seedHierarchicalMenus() {
     name: "purchases_incoming",
     label: "Incoming Purchases",
     icon: "Truck",
-    url: "/purchases",
+    url: "/purchases/incoming",
     order: 3,
     permissionKey: "purchases.view",
     parent: purchases._id,
   });
 
+  // 6. Partners
   const partners = await create({
     name: "partners_group",
     label: "Partners",
     icon: "Handshake",
     url: "",
-    order: 8,
+    order: 6,
     permissionKey: "customers.view",
     parent: null,
   });
@@ -219,22 +178,24 @@ async function seedHierarchicalMenus() {
     parent: partners._id,
   });
 
+  // 7. Reports
   await create({
     name: "reports",
     label: "Reports",
     icon: "BarChart3",
     url: "/reports",
-    order: 9,
+    order: 7,
     permissionKey: "reports.view",
     parent: null,
   });
 
+  // 8. Administration
   const admin = await create({
     name: "admin_group",
     label: "Administration",
     icon: "Settings2",
     url: "",
-    order: 10,
+    order: 8,
     permissionKey: "users.manage",
     parent: null,
   });

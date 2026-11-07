@@ -1,12 +1,23 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import PageHeader from "../../components/ui/PageHeader";
 import Modal from "../../components/ui/Modal";
 import Skeleton from "../../components/ui/Skeleton";
 import { api } from "../../services/api";
 import { useToast } from "../../contexts/ToastContext";
 
+function viewFromPath(pathname) {
+  if (pathname.endsWith("/create")) return "create";
+  if (pathname.endsWith("/incoming")) return "incoming";
+  return "pending";
+}
+
 export default function PurchasesPage() {
   const toast = useToast();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const view = viewFromPath(location.pathname);
+
   const [items, setItems] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
   const [medicines, setMedicines] = useState([]);
@@ -43,6 +54,27 @@ export default function PurchasesPage() {
     load();
   }, []);
 
+  useEffect(() => {
+    if (view === "create") setOpen(true);
+    else setOpen(false);
+  }, [view]);
+
+  const filtered = useMemo(() => {
+    if (view === "incoming") {
+      return items.filter((p) => p.status === "approved" || p.status === "received");
+    }
+    return items.filter((p) => p.status !== "approved" && p.status !== "received");
+  }, [items, view]);
+
+  const title =
+    view === "create" ? "Create Purchase" : view === "incoming" ? "Incoming Purchases" : "Pending Purchases";
+  const subtitle =
+    view === "create"
+      ? "Add a new supplier purchase order"
+      : view === "incoming"
+        ? "Approved purchases awaiting or completed intake"
+        : "Purchases waiting for approval";
+
   const create = async () => {
     try {
       const med = medicines.find((m) => m._id === form.medicineId);
@@ -64,6 +96,7 @@ export default function PurchasesPage() {
       });
       toast.success("Purchase created");
       setOpen(false);
+      navigate("/purchases");
       load();
     } catch (err) {
       toast.error(err.message);
@@ -83,12 +116,14 @@ export default function PurchasesPage() {
   return (
     <div>
       <PageHeader
-        title="Purchases"
-        subtitle="Supplier purchasing and stock intake"
+        title={title}
+        subtitle={subtitle}
         actions={
-          <button type="button" className="btn btn-primary" onClick={() => setOpen(true)}>
-            New Purchase
-          </button>
+          view !== "create" ? (
+            <button type="button" className="btn btn-primary" onClick={() => navigate("/purchases/create")}>
+              New Purchase
+            </button>
+          ) : null
         }
       />
       <div className="card">
@@ -107,27 +142,35 @@ export default function PurchasesPage() {
                 </tr>
               </thead>
               <tbody>
-                {items.map((p) => (
-                  <tr key={p._id}>
-                    <td>{p.purchaseNumber}</td>
-                    <td>{p.supplier?.name}</td>
-                    <td>${Number(p.totalCost).toFixed(2)}</td>
-                    <td>
-                      <span className={`badge badge-${p.status === "approved" ? "success" : "warning"}`}>
-                        {p.status}
-                      </span>
-                    </td>
-                    <td>
-                      {p.status !== "approved" ? (
-                        <button type="button" className="btn btn-primary" onClick={() => approve(p._id)}>
-                          Approve
-                        </button>
-                      ) : (
-                        "-"
-                      )}
+                {filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} style={{ color: "var(--muted)" }}>
+                      No purchases in this view.
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  filtered.map((p) => (
+                    <tr key={p._id}>
+                      <td>{p.purchaseNumber}</td>
+                      <td>{p.supplier?.name}</td>
+                      <td>${Number(p.totalCost).toFixed(2)}</td>
+                      <td>
+                        <span className={`badge badge-${p.status === "approved" ? "success" : "warning"}`}>
+                          {p.status}
+                        </span>
+                      </td>
+                      <td>
+                        {p.status !== "approved" && p.status !== "received" ? (
+                          <button type="button" className="btn btn-primary" onClick={() => approve(p._id)}>
+                            Approve
+                          </button>
+                        ) : (
+                          "-"
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -137,10 +180,20 @@ export default function PurchasesPage() {
       <Modal
         open={open}
         title="New Purchase"
-        onClose={() => setOpen(false)}
+        onClose={() => {
+          setOpen(false);
+          if (view === "create") navigate("/purchases");
+        }}
         footer={
           <>
-            <button type="button" className="btn btn-ghost" onClick={() => setOpen(false)}>
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={() => {
+                setOpen(false);
+                if (view === "create") navigate("/purchases");
+              }}
+            >
               Cancel
             </button>
             <button type="button" className="btn btn-primary" onClick={create}>
@@ -174,11 +227,19 @@ export default function PurchasesPage() {
           </label>
           <label>
             Quantity
-            <input type="number" value={form.quantity} onChange={(e) => setForm((p) => ({ ...p, quantity: e.target.value }))} />
+            <input
+              type="number"
+              value={form.quantity}
+              onChange={(e) => setForm((p) => ({ ...p, quantity: e.target.value }))}
+            />
           </label>
           <label>
             Purchase Price
-            <input type="number" value={form.purchasePrice} onChange={(e) => setForm((p) => ({ ...p, purchasePrice: e.target.value }))} />
+            <input
+              type="number"
+              value={form.purchasePrice}
+              onChange={(e) => setForm((p) => ({ ...p, purchasePrice: e.target.value }))}
+            />
           </label>
           <label>
             Batch Number
@@ -186,7 +247,11 @@ export default function PurchasesPage() {
           </label>
           <label>
             Expiry Date
-            <input type="date" value={form.expiryDate} onChange={(e) => setForm((p) => ({ ...p, expiryDate: e.target.value }))} />
+            <input
+              type="date"
+              value={form.expiryDate}
+              onChange={(e) => setForm((p) => ({ ...p, expiryDate: e.target.value }))}
+            />
           </label>
         </div>
       </Modal>

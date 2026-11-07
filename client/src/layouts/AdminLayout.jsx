@@ -19,14 +19,13 @@ import { useTheme } from "../contexts/ThemeContext";
 import { DynamicIcon } from "../utils/icons";
 import "./AdminLayout.css";
 
-function pathMatches(url, pathname) {
+function pathExactOrChild(url, pathname) {
   if (!url) return false;
-  if (pathname === url) return true;
-  return pathname.startsWith(`${url}/`);
+  return pathname === url || pathname.startsWith(`${url}/`);
 }
 
 function hasActiveChild(item, pathname) {
-  if (pathMatches(item.url, pathname)) return true;
+  if (pathExactOrChild(item.url, pathname)) return true;
   return (item.children || []).some((child) => hasActiveChild(child, pathname));
 }
 
@@ -84,7 +83,7 @@ function MenuItems({
             {item.url ? (
               <NavLink
                 to={item.url}
-                end={item.url === "/dashboard"}
+                end
                 title={collapsed ? item.label : undefined}
                 className={({ isActive }) => `side-link${isActive ? " active" : ""}`}
                 onClick={onNavigate}
@@ -159,7 +158,7 @@ export default function AdminLayout() {
     const parents = [];
     const walk = (items, trail = []) => {
       items.forEach((item) => {
-        if (item.url && pathMatches(item.url, location.pathname)) {
+        if (item.url && pathExactOrChild(item.url, location.pathname)) {
           parents.push(...trail.map((t) => String(t.id)));
         }
         if (item.children?.length) walk(item.children, [...trail, item]);

@@ -177,7 +177,8 @@ async function seedDatabase() {
 
   const menuCount = await Menu.countDocuments();
   const nestedCount = await Menu.countDocuments({ parent: { $ne: null } });
-  if (menuCount === 0 || nestedCount === 0) {
+  const hasPurchaseCreate = await Menu.exists({ url: "/purchases/create" });
+  if (menuCount === 0 || nestedCount === 0 || !hasPurchaseCreate) {
     const { seedHierarchicalMenus } = require("./resyncMenus");
     await seedHierarchicalMenus();
     console.log("Menus seeded (hierarchical)");

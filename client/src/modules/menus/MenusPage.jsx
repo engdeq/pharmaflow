@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import PageHeader from "../../components/ui/PageHeader";
 import Modal from "../../components/ui/Modal";
 import Skeleton from "../../components/ui/Skeleton";
@@ -6,29 +6,51 @@ import { api } from "../../services/api";
 import { useToast } from "../../contexts/ToastContext";
 import { useAuth } from "../../contexts/AuthContext";
 
+function flattenTree(nodes, depth = 0, parentLabel = "") {
+  const rows = [];
+  (nodes || []).forEach((node) => {
+    rows.push({
+      ...node,
+      _id: node.id || node._id,
+      depth,
+      parentLabel,
+    });
+    if (node.children?.length) {
+      rows.push(...flattenTree(node.children, depth + 1, node.label));
+    }
+  });
+  return rows;
+}
+
+const emptyForm = {
+  name: "",
+  label: "",
+  icon: "Circle",
+  url: "",
+  parent: "",
+  order: 0,
+  permissionKey: "",
+  isActive: true,
+};
+
 export default function MenusPage() {
   const toast = useToast();
   const { loadSession } = useAuth();
   const [flat, setFlat] = useState([]);
+  const [tree, setTree] = useState([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({
-    name: "",
-    label: "",
-    icon: "Circle",
-    url: "",
-    parent: "",
-    order: 0,
-    permissionKey: "",
-    isActive: true,
-  });
+  const [form, setForm] = useState(emptyForm);
+
+  const rows = useMemo(() => flattenTree(tree), [tree]);
 
   const load = async () => {
     setLoading(true);
     try {
       const res = await api("/menus");
       setFlat(res.data.flat || []);
+      setTree(res.data.tree || []);
     } catch (err) {
       toast.error(err.message);
     } finally {
@@ -63,13 +85,15 @@ export default function MenusPage() {
   };
 
   const move = async (item, dir) => {
-    const sorted = [...flat].sort((a, b) => a.order - b.order);
-    const idx = sorted.findIndex((m) => m._id === item._id);
-    const swapWith = sorted[idx + dir];
+    const siblings = flat
+      .filter((m) => String(m.parent || "") === String(item.parent || ""))
+      .sort((a, b) => a.order - b.order);
+    const idx = siblings.findIndex((m) => m._id === item._id);
+    const swapWith = siblings[idx + dir];
     if (!swapWith) return;
     const items = [
-      { id: item._id, order: swapWith.order, parent: item.parent },
-      { id: swapWith._id, order: item.order, parent: swapWith.parent },
+      { id: item._id, order: swapWith.order, parent: item.parent || null },
+      { id: swapWith._id, order: item.order, parent: swapWith.parent || null },
     ];
     await api("/menus/reorder", { method: "PUT", body: { items } });
     await load();
@@ -88,30 +112,34 @@ export default function MenusPage() {
     }
   };
 
+  const openCreate = () => {
+    setEditing(null);
+    setForm({ ...emptyForm, order: flat.length + 1 });
+    setOpen(true);
+  };
+
+  const openEdit = (m) => {
+    setEditing(m);
+    setForm({
+      name: m.name,
+      label: m.label,
+      icon: m.icon,
+      url: m.url || "",
+      parent: m.parent || "",
+      order: m.order,
+      permissionKey: m.permissionKey || "",
+      isActive: m.isActive,
+    });
+    setOpen(true);
+  };
+
   return (
     <div>
       <PageHeader
         title="Menus"
-        subtitle="Database-driven navigation management"
+        subtitle="Parent menus and submenu URLs for the sidebar"
         actions={
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={() => {
-              setEditing(null);
-              setForm({
-                name: "",
-                label: "",
-                icon: "Circle",
-                url: "",
-                parent: "",
-                order: flat.length + 1,
-                permissionKey: "",
-                isActive: true,
-              });
-              setOpen(true);
-            }}
-          >
+          <button type="button" className="btn btn-primary" onClick={openCreate}>
             Add Menu
           </button>
         }
@@ -126,6 +154,7 @@ export default function MenusPage() {
                 <tr>
                   <th>Order</th>
                   <th>Label</th>
+                  <th>Parent</th>
                   <th>URL</th>
                   <th>Icon</th>
                   <th>Permission</th>
@@ -134,49 +163,36 @@ export default function MenusPage() {
                 </tr>
               </thead>
               <tbody>
-                {[...flat]
-                  .sort((a, b) => a.order - b.order)
-                  .map((m) => (
-                    <tr key={m._id}>
-                      <td>{m.order}</td>
-                      <td>{m.label}</td>
-                      <td>{m.url}</td>
-                      <td>{m.icon}</td>
-                      <td>{m.permissionKey || "-"}</td>
-                      <td>{m.isActive ? "Yes" : "No"}</td>
-                      <td>
-                        <button type="button" className="btn btn-ghost" onClick={() => move(m, -1)}>
-                          ↑
-                        </button>{" "}
-                        <button type="button" className="btn btn-ghost" onClick={() => move(m, 1)}>
-                          ↓
-                        </button>{" "}
-                        <button
-                          type="button"
-                          className="btn btn-ghost"
-                          onClick={() => {
-                            setEditing(m);
-                            setForm({
-                              name: m.name,
-                              label: m.label,
-                              icon: m.icon,
-                              url: m.url,
-                              parent: m.parent || "",
-                              order: m.order,
-                              permissionKey: m.permissionKey || "",
-                              isActive: m.isActive,
-                            });
-                            setOpen(true);
-                          }}
-                        >
-                          Edit
-                        </button>{" "}
-                        <button type="button" className="btn btn-danger" onClick={() => remove(m)}>
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                {rows.map((m) => (
+                  <tr key={m._id}>
+                    <td>{m.order}</td>
+                    <td>
+                      <span style={{ paddingLeft: `${m.depth * 18}px`, fontWeight: m.depth ? 500 : 700 }}>
+                        {m.depth ? "↳ " : ""}
+                        {m.label}
+                      </span>
+                    </td>
+                    <td>{m.parentLabel || "—"}</td>
+                    <td>{m.url || <span style={{ color: "var(--muted)" }}>group</span>}</td>
+                    <td>{m.icon}</td>
+                    <td>{m.permissionKey || "-"}</td>
+                    <td>{m.isActive ? "Yes" : "No"}</td>
+                    <td>
+                      <button type="button" className="btn btn-ghost" onClick={() => move(m, -1)}>
+                        ↑
+                      </button>{" "}
+                      <button type="button" className="btn btn-ghost" onClick={() => move(m, 1)}>
+                        ↓
+                      </button>{" "}
+                      <button type="button" className="btn btn-ghost" onClick={() => openEdit(m)}>
+                        Edit
+                      </button>{" "}
+                      <button type="button" className="btn btn-danger" onClick={() => remove(m)}>
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
@@ -202,19 +218,28 @@ export default function MenusPage() {
           {["name", "label", "icon", "url", "permissionKey"].map((name) => (
             <label key={name}>
               {name}
-              <input value={form[name]} onChange={(e) => setForm((p) => ({ ...p, [name]: e.target.value }))} />
+              <input
+                value={form[name]}
+                onChange={(e) => setForm((p) => ({ ...p, [name]: e.target.value }))}
+                placeholder={name === "url" ? "/path or empty for parent group" : undefined}
+              />
             </label>
           ))}
           <label>
             Order
-            <input type="number" value={form.order} onChange={(e) => setForm((p) => ({ ...p, order: e.target.value }))} />
+            <input
+              type="number"
+              value={form.order}
+              onChange={(e) => setForm((p) => ({ ...p, order: e.target.value }))}
+            />
           </label>
           <label>
             Parent
             <select value={form.parent} onChange={(e) => setForm((p) => ({ ...p, parent: e.target.value }))}>
-              <option value="">None</option>
+              <option value="">None (top level)</option>
               {flat
                 .filter((m) => !editing || m._id !== editing._id)
+                .filter((m) => !m.parent)
                 .map((m) => (
                   <option key={m._id} value={m._id}>
                     {m.label}

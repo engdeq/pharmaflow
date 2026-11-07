@@ -41,6 +41,8 @@ export default function AppRouter() {
                   <Route path="/sales/pos" element={<POSPage />} />
                   <Route path="/sales" element={<SalesPage />} />
                   <Route path="/purchases" element={<PurchasesPage />} />
+                  <Route path="/purchases/create" element={<PurchasesPage />} />
+                  <Route path="/purchases/incoming" element={<PurchasesPage />} />
                   <Route path="/inventory" element={<InventoryPage />} />
                   <Route path="/expiry" element={<ExpiryPage />} />
                   <Route path="/users" element={<UsersPage />} />
