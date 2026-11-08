@@ -1,24 +1,30 @@
 const MedicineBatch = require("../models/MedicineBatch");
 const InventoryTransaction = require("../models/InventoryTransaction");
 
-async function getAvailableQty(medicineId) {
-  const batches = await MedicineBatch.find({
+async function getAvailableQty(medicineId, tenantId) {
+  const filter = {
     medicine: medicineId,
     isActive: true,
     quantity: { $gt: 0 },
     expiryDate: { $gt: new Date() },
-  });
+  };
+  if (tenantId) filter.tenantId = tenantId;
+
+  const batches = await MedicineBatch.find(filter);
   return batches.reduce((sum, b) => sum + b.quantity, 0);
 }
 
 /** FEFO allocation: earliest expiry first, skip expired */
-async function allocateFEFO(medicineId, quantity, session = null) {
-  const query = MedicineBatch.find({
+async function allocateFEFO(medicineId, quantity, session = null, tenantId = null) {
+  const filter = {
     medicine: medicineId,
     isActive: true,
     quantity: { $gt: 0 },
     expiryDate: { $gt: new Date() },
-  }).sort({ expiryDate: 1 });
+  };
+  if (tenantId) filter.tenantId = tenantId;
+
+  const query = MedicineBatch.find(filter).sort({ expiryDate: 1 });
 
   if (session) query.session(session);
   const batches = await query;
@@ -40,13 +46,14 @@ async function allocateFEFO(medicineId, quantity, session = null) {
   return allocations;
 }
 
-async function deductStock(allocations, { type, reference, userId, session }) {
+async function deductStock(allocations, { type, reference, userId, session, tenantId }) {
   for (const { batch, quantity } of allocations) {
     const previousQty = batch.quantity;
     batch.quantity -= quantity;
     await batch.save(session ? { session } : undefined);
 
     const tx = {
+      tenantId: tenantId || batch.tenantId,
       medicine: batch.medicine,
       batch: batch._id,
       type,
@@ -74,8 +81,12 @@ async function addStock({
   reference,
   userId,
   session,
+  tenantId,
 }) {
-  let query = MedicineBatch.findOne({ medicine: medicineId, batchNumber });
+  const batchFilter = { medicine: medicineId, batchNumber };
+  if (tenantId) batchFilter.tenantId = tenantId;
+
+  let query = MedicineBatch.findOne(batchFilter);
   if (session) query = query.session(session);
   let batch = await query;
 
@@ -89,6 +100,7 @@ async function addStock({
     await batch.save(session ? { session } : undefined);
   } else {
     const payload = {
+      tenantId,
       medicine: medicineId,
       batchNumber,
       quantity,
@@ -103,6 +115,7 @@ async function addStock({
   }
 
   const tx = {
+    tenantId: tenantId || batch.tenantId,
     medicine: medicineId,
     batch: batch._id,
     type,

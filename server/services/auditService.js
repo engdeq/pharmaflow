@@ -8,9 +8,16 @@ async function writeAudit({
   ipAddress = "",
   previousValues = null,
   newValues = null,
+  tenantId = null,
 }) {
   try {
+    const resolvedTenant =
+      tenantId ||
+      user?.tenantId ||
+      null;
+
     await AuditLog.create({
+      tenantId: resolvedTenant || undefined,
       user: user?._id || user || null,
       action,
       module,

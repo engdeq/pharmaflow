@@ -15,6 +15,7 @@ function buildTree(menus, parentId = null) {
       url: m.url,
       order: m.order,
       permissionKey: m.permissionKey,
+      moduleKey: m.moduleKey || "",
       isActive: m.isActive,
       children: buildTree(menus, String(m._id)),
     }));
@@ -37,11 +38,16 @@ function collectWithAncestors(allowed, allMenus) {
   return Array.from(selected.values());
 }
 
-async function getMenusForUser(permissions) {
-  const menus = await Menu.find({ isActive: true }).lean();
+async function getMenusForUser(permissions, { tenantId, enabledModules } = {}) {
+  if (!tenantId) return [];
+
+  const filter = { isActive: true, tenantId };
+  const menus = await Menu.find(filter).lean();
   const isSuper = permissions.has("*");
+  const modules = Array.isArray(enabledModules) ? new Set(enabledModules) : null;
 
   const allowed = menus.filter((m) => {
+    if (modules && m.moduleKey && !modules.has(m.moduleKey)) return false;
     if (!m.permissionKey) return true;
     return isSuper || permissions.has(m.permissionKey);
   });

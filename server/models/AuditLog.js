@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { applyTenantPlugin } = require("../utils/tenantPlugin");
 
 const auditLogSchema = new mongoose.Schema(
   {
@@ -13,6 +14,9 @@ const auditLogSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Platform audits may have null tenantId
+applyTenantPlugin(auditLogSchema, { required: false });
+auditLogSchema.index({ tenantId: 1, createdAt: -1 });
 auditLogSchema.index({ createdAt: -1 });
 
 module.exports = mongoose.model("AuditLog", auditLogSchema);

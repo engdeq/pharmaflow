@@ -4,17 +4,17 @@ import { useAuth } from "../contexts/AuthContext";
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { isAuthenticated, loading, loadSession } = useAuth();
+  const { isAuthenticated, loading, loadSession, isPlatformAdmin } = useAuth();
 
   if (!loading && isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to={isPlatformAdmin ? "/platform" : "/dashboard"} replace />;
   }
 
   return (
     <AuthCard
       onLoginSuccess={async () => {
-        await loadSession();
-        navigate("/dashboard");
+        const sessionUser = await loadSession();
+        navigate(sessionUser?.isPlatformAdmin ? "/platform" : "/dashboard");
       }}
     />
   );

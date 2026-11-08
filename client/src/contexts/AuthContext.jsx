@@ -3,6 +3,22 @@ import { authApi } from "../services/api";
 
 const AuthContext = createContext(null);
 
+function applyCompanyBranding(company) {
+  const root = document.documentElement;
+  const branding = company?.branding || {};
+  const map = {
+    "--primary": branding.primaryColor,
+    "--primary-dark": branding.secondaryColor || branding.primaryColor,
+    "--primary-hover": branding.buttonColor || branding.primaryColor,
+    "--sidebar": branding.sidebarColor,
+    "--topbar": branding.headerColor,
+    "--bg": branding.backgroundColor,
+  };
+  Object.entries(map).forEach(([key, value]) => {
+    if (value) root.style.setProperty(key, value);
+  });
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [menus, setMenus] = useState([]);
@@ -19,12 +35,16 @@ export function AuthProvider({ children }) {
 
     try {
       const [meRes, menuRes] = await Promise.all([authApi.me(), authApi.myMenus()]);
-      setUser(meRes.data);
+      const nextUser = meRes.data;
+      setUser(nextUser);
       setMenus(menuRes.data || []);
+      if (nextUser?.company) applyCompanyBranding(nextUser.company);
+      return nextUser;
     } catch {
       localStorage.removeItem("pharmacy_token");
       setUser(null);
       setMenus([]);
+      return null;
     } finally {
       setLoading(false);
     }
@@ -59,6 +79,8 @@ export function AuthProvider({ children }) {
       user,
       menus,
       loading,
+      company: user?.company || null,
+      isPlatformAdmin: Boolean(user?.isPlatformAdmin),
       isAuthenticated: Boolean(user),
       loadSession,
       logout,

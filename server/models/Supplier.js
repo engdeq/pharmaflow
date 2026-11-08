@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { applyTenantPlugin } = require("../utils/tenantPlugin");
 
 const supplierSchema = new mongoose.Schema(
   {
@@ -13,5 +14,8 @@ const supplierSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+applyTenantPlugin(supplierSchema);
+supplierSchema.index({ tenantId: 1, name: 1 });
 
 module.exports = mongoose.model("Supplier", supplierSchema);

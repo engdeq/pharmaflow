@@ -5,6 +5,7 @@ const { ok } = require("../utils/response");
 const asyncHandler = require("../utils/asyncHandler");
 
 const router = express.Router();
+// Platform-wide permission catalog — authenticate only, no tenant required
 router.use(authenticate, requirePermission("permissions.manage", "roles.manage"));
 
 router.get(

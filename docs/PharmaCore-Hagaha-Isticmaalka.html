@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="so">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PharmaCore — Hagaha Isticmaalka (Team Guide)</title>
+  <style>
+    :root {
+      --blue: #748cf8;
+      --blue-dark: #5a6fd8;
+      --ink: #172033;
+      --muted: #64748b;
+      --line: #dfe6f8;
+      --soft: #f4f7ff;
+      --ok: #16a34a;
+      --warn: #d97706;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+      color: var(--ink);
+      background: white;
+      line-height: 1.55;
+      font-size: 14.5px;
+    }
+    .page {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 36px 40px 60px;
+    }
+    .cover {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 36px 32px;
+      background: linear-gradient(160deg, #eef2ff 0%, #ffffff 55%);
+      margin-bottom: 28px;
+    }
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .brand-mark {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--blue), var(--blue-dark));
+      color: white;
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      font-size: 16px;
+    }
+    h1 { margin: 0 0 8px; font-size: 28px; }
+    .subtitle { color: var(--muted); margin: 0 0 18px; font-size: 15px; }
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .chip {
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    h2 {
+      margin: 34px 0 12px;
+      font-size: 20px;
+      color: var(--blue-dark);
+      border-bottom: 2px solid var(--line);
+      padding-bottom: 8px;
+      page-break-after: avoid;
+    }
+    h3 {
+      margin: 20px 0 8px;
+      font-size: 16px;
+      page-break-after: avoid;
+    }
+    p { margin: 0 0 10px; }
+    ol, ul { margin: 0 0 14px; padding-left: 22px; }
+    li { margin-bottom: 6px; }
+    .step-box, .note, .warn, .ok {
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin: 12px 0 16px;
+      page-break-inside: avoid;
+    }
+    .step-box {
+      background: var(--soft);
+      border: 1px solid var(--line);
+    }
+    .note {
+      background: #f8fafc;
+      border-left: 4px solid var(--blue);
+    }
+    .ok {
+      background: rgba(22,163,74,.08);
+      border-left: 4px solid var(--ok);
+    }
+    .warn {
+      background: rgba(217,119,6,.08);
+      border-left: 4px solid var(--warn);
+    }
+    .label {
+      display: inline-block;
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 2px 8px;
+      font-family: Consolas, monospace;
+      font-size: 12.5px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0 18px;
+      font-size: 13.5px;
+    }
+    th, td {
+      border: 1px solid var(--line);
+      padding: 10px 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: var(--soft);
+      color: var(--blue-dark);
+    }
+    .toc a { color: var(--blue-dark); text-decoration: none; }
+    .toc li { margin-bottom: 4px; }
+    .footer {
+      margin-top: 40px;
+      padding-top: 16px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 12px;
+    }
+    @media print {
+      body { font-size: 12.5px; }
+      .page { padding: 12px 18px; max-width: none; }
+      .cover { break-inside: avoid; }
+      a { color: inherit; text-decoration: none; }
+      h2 { page-break-before: auto; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <section class="cover">
+      <div class="brand">
+        <div class="brand-mark">Rx</div>
+        <div>
+          <strong>PharmaCore</strong><br />
+          <span style="color:var(--muted);font-size:13px;">Pharmacy Management System</span>
+        </div>
+      </div>
+      <h1>Hagaha Isticmaalka — Team Guide</h1>
+      <p class="subtitle">
+        Sharaxaad mid-mid ah oo cad: sidee systemku u shaqeeyaa, yaa maxaa sameeyaa,
+        iyo sida aad ugu jeedin kartid kooxdaada.
+      </p>
+      <div class="meta">
+        <span class="chip">Version 2.0</span>
+        <span class="chip">Login: admin / Admin@123</span>
+        <span class="chip">Live: http://2.58.82.168:8090</span>
+      </div>
+    </section>
+
+    <h2>1. Nuxurka (1 daqiiqo)</h2>
+    <p>
+      <strong>PharmaCore</strong> waa nidaam farmashiye: wuxuu maamulaa dawooyinka, iibka (POS),
+      alaabta, iibsiga (purchases), macaamiisha, iyo warbixinaha — mid kasta wuxuu arkaa kaliya
+      waxa uu fasax u leeyahay (roles &amp; permissions).
+    </p>
+    <div class="ok">
+      <strong>Fikradda ugu muhiimsan:</strong>
+      Login → Door sidebar → Samee shaqada → Save → Loading dialog → Success dialog.
+    </div>
+
+    <h2>2. Tusmada (Table of Contents)</h2>
+    <ol class="toc">
+      <li><a href="#login">Login &amp; amniga</a></li>
+      <li><a href="#layout">Qaabka shaashadda (Sidebar / Topbar)</a></li>
+      <li><a href="#roles">Doorka shaqaalaha (Roles)</a></li>
+      <li><a href="#flow">Habka shaqada maalinlaha (Daily flow)</a></li>
+      <li><a href="#modules">Qaybaha mid-mid</a></li>
+      <li><a href="#save">Save, Loading &amp; Success</a></li>
+      <li><a href="#admin">Administration (Users / Roles / Menus)</a></li>
+      <li><a href="#tips">Tilmaamo kooxda &amp; khaladaad caadi ah</a></li>
+    </ol>
+
+    <h2 id="login">3. Login &amp; amniga</h2>
+    <div class="step-box">
+      <ol>
+        <li>Fur browser-ka → geli URL-ka: <span class="label">http://2.58.82.168:8090</span></li>
+        <li>Geli <strong>Username</strong> iyo <strong>Password</strong>.</li>
+        <li>Guji <strong>Login</strong>.</li>
+        <li>Haddii sax tahay, waxaad gelaysaa Dashboard.</li>
+      </ol>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Account</th><th>Password</th><th>Xusuusin</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="label">admin</span></td>
+          <td><span class="label">Admin@123</span></td>
+          <td>System Developer — <strong>lama beddeli / lama tirtiri karo</strong></td>
+        </tr>
+        <tr>
+          <td>Users kale</td>
+          <td>Admin ayaa abuura</td>
+          <td>Active/Inactive switch ayaa xakameynaya gelitaanka</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="warn">
+      <strong>Haddii login fashilmo:</strong> hubi username/password, ama in account-ku yahay
+      <em>Inactive</em>. Fariinta casman waxay sheegaysaa khaladka.
+    </div>
+
+    <h2 id="layout">4. Qaabka shaashadda</h2>
+    <h3>4.1 Sidebar (bidix)</h3>
+    <ul>
+      <li>Liiska modules-ka (Dashboard, POS, Medicines, …).</li>
+      <li>Qaar waa <strong>parent menu</strong> — guji si aad u furto submenu.</li>
+      <li><strong>Mid keliya</strong> ayaa furan: mid cusub markaad furto, kii hore wuu xirmayaa.</li>
+      <li>Item-ka aad joogto wuxuu noqdaa buluug (active).</li>
+    </ul>
+    <h3>4.2 Topbar (kor)</h3>
+    <ul>
+      <li>Search / breadcrumbs</li>
+      <li>Theme (light/dark)</li>
+      <li>Profile → Logout</li>
+    </ul>
+
+    <h2 id="roles">5. Yaa maxaa sameeyaa? (Roles)</h2>
+    <p>Sharax kooxdaada sidaan:</p>
+    <table>
+      <thead>
+        <tr><th>Role</th><th>Ujeeddo</th><th>Qaybaha ugu badan</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Super Admin / Developer</strong></td>
+          <td>Xakameynta nidaamka oo dhan</td>
+          <td>Users, Roles, Menus, Settings, Audit</td>
+        </tr>
+        <tr>
+          <td><strong>Admin</strong></td>
+          <td>Maamul maalinle</td>
+          <td>Almost all (maahan permissions.manage qaarkood)</td>
+        </tr>
+        <tr>
+          <td><strong>Pharmacist</strong></td>
+          <td>Iibinta iyo dawooyinka</td>
+          <td>POS, Medicines, Customers, Inventory view</td>
+        </tr>
+        <tr>
+          <td><strong>Cashier</strong></td>
+          <td>Kaliya iib</td>
+          <td>POS, Sales, Customers</td>
+        </tr>
+        <tr>
+          <td><strong>Store / Inventory Manager</strong></td>
+          <td>Alaab &amp; iibsi</td>
+          <td>Inventory, Purchases, Expiry, Suppliers</td>
+        </tr>
+        <tr>
+          <td><strong>Accountant</strong></td>
+          <td>Warbixino</td>
+          <td>Reports, Sales/Purchases view</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="note">
+      Sidebar-ku wuxuu muujiyaa <strong>kaliya</strong> menus-ka role-kaagu fasax u leeyahay.
+      Haddii qof aan arkin module, waa permission — ma aha bug.
+    </div>
+
+    <h2 id="flow">6. Habka shaqada maalinlaha (ugu fiican inaad u sheegto teamka)</h2>
+    <div class="step-box">
+      <ol>
+        <li><strong>Subax:</strong> Hubi Dashboard (sales, low stock, expiry alerts).</li>
+        <li><strong>Alaab cusub:</strong> Purchases → Create Purchase → Approve → Inventory kor u kacaya.</li>
+        <li><strong>Iib:</strong> Point of Sale (POS) → dooro dawo → charge → sale la keydiyaa.</li>
+        <li><strong>Hubin:</strong> Sales History / Reports.</li>
+        <li><strong>Dhammaad maalin:</strong> Hubi Expiry + low stock, diyaarso purchase cusub haddii loo baahdo.</li>
+      </ol>
+    </div>
+
+    <h2 id="modules">7. Qaybaha — mid mid</h2>
+
+    <h3>7.1 Dashboard</h3>
+    <p>Sawir guud: iibka, alaabta, digniino. Ma wax lagu beddelo — waa overview.</p>
+
+    <h3>7.2 Point of Sale (POS)</h3>
+    <div class="step-box">
+      <ol>
+        <li>Fur <span class="label">Point of Sale (POS)</span> → <span class="label">New Sale</span>.</li>
+        <li>Raadi / dooro medicine.</li>
+        <li>Geli quantity.</li>
+        <li>Dhammee iibka (complete sale).</li>
+        <li>Success dialog ayaa soo baxaya — stock ayaa hoos u dhaca.</li>
+      </ol>
+    </div>
+    <p><span class="label">Sales History</span> = liiska iibkii hore (refunds/view).</p>
+
+    <h3>7.3 Medicines</h3>
+    <ul>
+      <li><strong>Medicine List</strong> — daawooyinka oo dhan (add / edit / delete).</li>
+      <li><strong>Categories</strong> — noocyada (Antibiotic, Painkiller, …).</li>
+    </ul>
+    <div class="note">
+      Ka hor intaadan iibin, medicine waa inuu jiraa + category + stock.
+    </div>
+
+    <h3>7.4 Inventory</h3>
+    <ul>
+      <li><strong>Stock Levels</strong> — inta alaab ah ee hadda jirta; waxaad adjust-gareyn kartaa.</li>
+      <li><strong>Expiry Management</strong> — dawooyinka dhacaya / dhacay.</li>
+    </ul>
+
+    <h3>7.5 Purchases (iibsiga laga keeno supplier)</h3>
+    <table>
+      <thead>
+        <tr><th>Submenu</th><th>URL / macnaha</th><th>Maxaad sameysaa</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Pending Purchases</td>
+          <td><span class="label">/purchases</span></td>
+          <td>Liiska iibsiga sugaya approval</td>
+        </tr>
+        <tr>
+          <td>Create Purchase</td>
+          <td><span class="label">/purchases/create</span></td>
+          <td>Samee order cusub (supplier + medicine + qty + price + batch + expiry)</td>
+        </tr>
+        <tr>
+          <td>Incoming Purchases</td>
+          <td><span class="label">/purchases/incoming</span></td>
+          <td>Kuwa la approve-gareeyay / soo galay</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="ok">
+      <strong>Rule:</strong> Create → Pending → Approve → Stock-ku wuu kordhaa.
+    </div>
+
+    <h3>7.6 Partners</h3>
+    <ul>
+      <li><strong>Customers</strong> — macaamiisha (POS / credit).</li>
+      <li><strong>Suppliers</strong> — shirkadaha aad ka iibsato.</li>
+    </ul>
+
+    <h3>7.7 Reports</h3>
+    <p>Warbixino iib / purchase. Export haddii aad u baahan tahay analysis.</p>
+
+    <h2 id="save">8. Save, Loading &amp; Success (systemka oo dhan)</h2>
+    <p>Markasta oo aad Save / Update / Delete / Approve sameyso:</p>
+    <ol>
+      <li><strong>Loading dialog</strong> — “Saving… / Updating… / Deleting…” (sug).</li>
+      <li><strong>Success dialog</strong> — checkmark cagaaran + fariin (OK).</li>
+      <li>Haddii qalad dhaco — toast casaan ah ayaa sheegaya fariinta.</li>
+    </ol>
+    <div class="warn">
+      Ha riixin Save laba jeer si degdeg ah inta loading-ku furan yahay.
+    </div>
+
+    <h2 id="admin">9. Administration (kaliya maamulayaasha)</h2>
+
+    <h3>9.1 Users</h3>
+    <ul>
+      <li><strong>Add User</strong> — username, email, password, roles.</li>
+      <li><strong>Edit</strong> — beddel xogta.</li>
+      <li><strong>Active / Inactive switch</strong> — Inactive = login ma shaqeeyo.</li>
+      <li><strong>Reset PW</strong> — password cusub (default: ChangeMe@123).</li>
+      <li><strong>admin (System Developer)</strong> — Locked: lama edit / disable / delete-gareyn karo.</li>
+    </ul>
+
+    <h3>9.2 Roles</h3>
+    <ul>
+      <li>Dooro role → Edit → checkbox permissions.</li>
+      <li>System roles (Super Admin, …) lama tirtiri / lama demin karo.</li>
+      <li>Active switch roles kale.</li>
+    </ul>
+
+    <h3>9.3 Menus</h3>
+    <ul>
+      <li>Sidebar menus waxay ka yimaadaan database.</li>
+      <li>Parent = group (URL madhan), Child = link dhabta ah.</li>
+      <li>Order ↑↓ + Parent dropdown.</li>
+    </ul>
+
+    <h3>9.4 Permissions / Audit / Settings</h3>
+    <ul>
+      <li><strong>Permissions</strong> — liiska fasaxyada technical.</li>
+      <li><strong>Audit Logs</strong> — cida wax beddeshay (security trail).</li>
+      <li><strong>Settings</strong> — goobaha guud ee farmashiyaha.</li>
+    </ul>
+
+    <h2 id="tips">10. Sida ugu jeedinaysid teamka (script gaaban)</h2>
+    <div class="step-box">
+      <p><strong>Odhaahdaada:</strong></p>
+      <ol>
+        <li>“Mid kasta wuxuu geliyaa account-kiisa — sidebar-ku wuxuu muujiyaa shaqadiisa.”</li>
+        <li>“Cashier / Pharmacist: POS kaliya maalin kasta.”</li>
+        <li>“Store: Purchases + Inventory + Expiry.”</li>
+        <li>“Markaad Save gareyso, sug loading, ka dib success — taasi waa caddayn in xogtu keydsantay.”</li>
+        <li>“Haddii aadan arkin menu, ii soo sheeg — waa role/permission.”</li>
+        <li>“Account-ka admin waa locked developer — ha isku dayin inaad beddesho.”</li>
+      </ol>
+    </div>
+
+    <h2>11. Checklist tababar (30–45 daqiiqo)</h2>
+    <table>
+      <thead>
+        <tr><th>#</th><th>Task</th><th>Qofka</th><th>✓</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td>Login + Logout</td><td>Qof kasta</td><td></td></tr>
+        <tr><td>2</td><td>Create Category + Medicine</td><td>Pharmacist / Admin</td><td></td></tr>
+        <tr><td>3</td><td>Create Supplier + Purchase + Approve</td><td>Store Manager</td><td></td></tr>
+        <tr><td>4</td><td>POS sale mid ah</td><td>Cashier</td><td></td></tr>
+        <tr><td>5</td><td>Hubi Inventory / Sales History</td><td>Team</td><td></td></tr>
+        <tr><td>6</td><td>Create user cusub + Active switch</td><td>Admin</td><td></td></tr>
+        <tr><td>7</td><td>Arag Success/Loading dialogs</td><td>Qof kasta</td><td></td></tr>
+      </tbody>
+    </table>
+
+    <h2>12. FAQ degdeg ah</h2>
+    <p><strong>Q: Maxaan arkaa sidebar yar?</strong><br />A: Role-kaagu wuxuu leeyahay permissions yar — sax role-ka Users/Roles.</p>
+    <p><strong>Q: Purchase approve ka dib stock ma kordhin?</strong><br />A: Hubi in approve uu guulaystay (success dialog) oo Inventory refresh garee.</p>
+    <p><strong>Q: Password-kaygii waan illoobay?</strong><br />A: Admin ha Reset PW sameeyo (maahan admin protected).</p>
+    <p><strong>Q: Labo menu ayaa isku mid u muuqda active?</strong><br />A: Accordion-ku waa exclusive; refresh / logout-login haddii browser cache duug yahay.</p>
+
+    <div class="footer">
+      PharmaCore Team Guide · Diyaariyay si aad ugu jeediso kooxda ·
+      Hayso PDF-kan tababarka iyo onboarding-ka.
+    </div>
+  </div>
+</body>
+</html>

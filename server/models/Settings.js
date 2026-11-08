@@ -1,5 +1,7 @@
 const mongoose = require("mongoose");
+const { applyTenantPlugin } = require("../utils/tenantPlugin");
 
+/** @deprecated Prefer Company.settings / Company.branding — kept for migration compatibility */
 const settingsSchema = new mongoose.Schema(
   {
     pharmacyName: { type: String, default: "Pharmacy Manager" },
@@ -17,5 +19,8 @@ const settingsSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+applyTenantPlugin(settingsSchema, { required: false });
+settingsSchema.index({ tenantId: 1 }, { unique: true, sparse: true });
 
 module.exports = mongoose.model("Settings", settingsSchema);

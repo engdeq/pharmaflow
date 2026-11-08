@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { applyTenantPlugin } = require("../utils/tenantPlugin");
 
 const saleItemSchema = new mongoose.Schema(
   {
@@ -15,7 +16,7 @@ const saleItemSchema = new mongoose.Schema(
 
 const saleSchema = new mongoose.Schema(
   {
-    receiptNumber: { type: String, required: true, unique: true },
+    receiptNumber: { type: String, required: true },
     customer: { type: mongoose.Schema.Types.ObjectId, ref: "Customer" },
     cashier: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     items: [saleItemSchema],
@@ -41,5 +42,9 @@ const saleSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+applyTenantPlugin(saleSchema, { branch: true });
+saleSchema.index({ tenantId: 1, receiptNumber: 1 }, { unique: true });
+saleSchema.index({ tenantId: 1, createdAt: -1 });
 
 module.exports = mongoose.model("Sale", saleSchema);

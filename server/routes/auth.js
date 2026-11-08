@@ -15,7 +15,12 @@ const router = express.Router();
 
 function getToken(user) {
   return jwt.sign(
-    { id: user._id, username: user.username },
+    {
+      id: user._id,
+      username: user.username,
+      tenantId: user.tenantId || null,
+      isPlatformAdmin: Boolean(user.isPlatformAdmin),
+    },
     process.env.JWT_SECRET || "pharmacy_dev_secret",
     { expiresIn: "7d" }
   );
@@ -49,24 +54,11 @@ router.post(
     });
     if (existing) return fail(res, "Username or email already exists.", 409);
 
-    const cashierRole = await Role.findOne({ name: "Cashier" });
-    const hashed = await bcrypt.hash(password, 10);
-    const user = await User.create({
-      username,
-      email: email.toLowerCase(),
-      password: hashed,
-      roles: cashierRole ? [cashierRole._id] : [],
-      status: "active",
-    });
-
-    const token = getToken(user);
-
-    // Keep AuthCard response shape
-    return res.status(201).json({
-      message: "Registration successful.",
-      token,
-      user: { id: user._id, username: user.username, email: user.email },
-    });
+    return fail(
+      res,
+      "Open user registration is disabled. Register a pharmacy company or ask your company admin for an invite.",
+      403
+    );
   })
 );
 
@@ -95,6 +87,24 @@ router.post(
       return fail(res, "Account is inactive.", 403);
     }
 
+    if (!user.isPlatformAdmin) {
+      if (!user.tenantId) {
+        return fail(res, "No company assigned to this account.", 403);
+      }
+      const Company = require("../models/Company");
+      const company = await Company.findById(user.tenantId).lean();
+      if (!company) return fail(res, "Company not found.", 403);
+      if (company.status === "suspended") {
+        return fail(res, "Company account is suspended.", 403);
+      }
+      if (company.status === "pending") {
+        return fail(res, "Company registration is pending approval.", 403);
+      }
+      if (company.status !== "active") {
+        return fail(res, "Company is not active.", 403);
+      }
+    }
+
     user.lastLogin = new Date();
     await user.save();
 
@@ -102,17 +112,23 @@ router.post(
 
     await writeAudit({
       user,
+      tenantId: user.tenantId,
       action: "login",
       module: "auth",
       description: `User ${user.username} logged in`,
       ipAddress: req.ip,
     });
 
-    // Keep AuthCard response shape
     return res.json({
       message: "Login successful.",
       token,
-      user: { id: user._id, username: user.username, email: user.email },
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        isPlatformAdmin: Boolean(user.isPlatformAdmin),
+        tenantId: user.tenantId || null,
+      },
     });
   })
 );
@@ -129,6 +145,21 @@ router.get(
       phone: req.user.phone,
       status: req.user.status,
       lastLogin: req.user.lastLogin,
+      isPlatformAdmin: Boolean(req.isPlatformAdmin),
+      tenantId: req.tenantId,
+      branchIds: req.branchIds || [],
+      company: req.company
+        ? {
+            id: req.company._id,
+            name: req.company.name,
+            status: req.company.status,
+            logo: req.company.logo || req.company.branding?.logo || "",
+            branding: req.company.branding || {},
+            settings: req.company.settings || {},
+            enabledModules: req.company.enabledModules || [],
+            subscription: req.company.subscription || {},
+          }
+        : null,
       roles: (req.user.roles || []).map((r) => ({
         id: r._id,
         name: r.name,
@@ -142,7 +173,32 @@ router.get(
   "/my-menus",
   authenticate,
   asyncHandler(async (req, res) => {
-    const tree = await getMenusForUser(req.permissions);
+    if (req.isPlatformAdmin) {
+      return ok(res, [
+        {
+          id: "platform-dashboard",
+          name: "platform_dashboard",
+          label: "Platform Dashboard",
+          icon: "LayoutDashboard",
+          url: "/platform",
+          order: 1,
+          children: [],
+        },
+        {
+          id: "platform-companies",
+          name: "platform_companies",
+          label: "Companies",
+          icon: "Building2",
+          url: "/platform/companies",
+          order: 2,
+          children: [],
+        },
+      ]);
+    }
+    const tree = await getMenusForUser(req.permissions, {
+      tenantId: req.tenantId,
+      enabledModules: req.company?.enabledModules,
+    });
     return ok(res, tree);
   })
 );

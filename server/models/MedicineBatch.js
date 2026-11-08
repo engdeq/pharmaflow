@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { applyTenantPlugin } = require("../utils/tenantPlugin");
 
 const medicineBatchSchema = new mongoose.Schema(
   {
@@ -18,7 +19,8 @@ const medicineBatchSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-medicineBatchSchema.index({ medicine: 1, expiryDate: 1 });
-medicineBatchSchema.index({ batchNumber: 1, medicine: 1 });
+applyTenantPlugin(medicineBatchSchema, { branch: true });
+medicineBatchSchema.index({ tenantId: 1, medicine: 1, expiryDate: 1 });
+medicineBatchSchema.index({ tenantId: 1, batchNumber: 1, medicine: 1 });
 
 module.exports = mongoose.model("MedicineBatch", medicineBatchSchema);

@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { applyTenantPlugin } = require("../utils/tenantPlugin");
 
 const menuSchema = new mongoose.Schema(
   {
@@ -9,11 +10,14 @@ const menuSchema = new mongoose.Schema(
     parent: { type: mongoose.Schema.Types.ObjectId, ref: "Menu", default: null },
     order: { type: Number, default: 0 },
     permissionKey: { type: String, default: "" },
+    moduleKey: { type: String, default: "" },
     isActive: { type: Boolean, default: true },
   },
   { timestamps: true }
 );
 
-menuSchema.index({ parent: 1, order: 1 });
+applyTenantPlugin(menuSchema, { required: true });
+menuSchema.index({ tenantId: 1, parent: 1, order: 1 });
+menuSchema.index({ tenantId: 1, name: 1 });
 
 module.exports = mongoose.model("Menu", menuSchema);

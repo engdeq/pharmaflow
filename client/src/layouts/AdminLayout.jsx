@@ -130,7 +130,7 @@ function splitMenus(menus) {
 }
 
 export default function AdminLayout() {
-  const { user, menus, logout } = useAuth();
+  const { user, menus, logout, company, isPlatformAdmin } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
@@ -187,10 +187,24 @@ export default function AdminLayout() {
     >
       <aside className="admin-sidebar">
         <div className="brand">
-          <div className="brand-mark">Rx</div>
+          <div className="brand-mark">
+            {company?.logo || company?.branding?.logo ? (
+              <img
+                src={company.logo || company.branding.logo}
+                alt=""
+                style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 14 }}
+              />
+            ) : (
+              "Rx"
+            )}
+          </div>
           <div className="brand-copy">
-            <strong>PharmaCore</strong>
-            <span>Pharmacy OS</span>
+            <strong>
+              {isPlatformAdmin
+                ? "PharmaCore Platform"
+                : company?.branding?.pharmacyName || company?.name || "PharmaCore"}
+            </strong>
+            <span>{isPlatformAdmin ? "Super Admin" : company?.branding?.tagline || "Pharmacy OS"}</span>
           </div>
           <button type="button" className="icon-btn mobile-only" onClick={() => setMobileOpen(false)}>
             <X size={18} />

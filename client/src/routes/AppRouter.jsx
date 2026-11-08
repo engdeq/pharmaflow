@@ -22,6 +22,8 @@ import MenusPage from "../modules/menus/MenusPage";
 import ReportsPage from "../modules/reports/ReportsPage";
 import SettingsPage from "../modules/settings/SettingsPage";
 import AuditPage from "../modules/audit/AuditPage";
+import PlatformDashboard from "../modules/platform/PlatformDashboard";
+import PlatformCompaniesPage from "../modules/platform/PlatformCompaniesPage";
 
 export default function AppRouter() {
   return (
@@ -33,6 +35,8 @@ export default function AppRouter() {
               <Route path="/" element={<LoginPage />} />
               <Route element={<ProtectedRoute />}>
                 <Route element={<AdminLayout />}>
+                  <Route path="/platform" element={<PlatformDashboard />} />
+                  <Route path="/platform/companies" element={<PlatformCompaniesPage />} />
                   <Route path="/dashboard" element={<DashboardPage />} />
                   <Route path="/medicines" element={<MedicinesPage />} />
                   <Route path="/categories" element={<CategoriesPage />} />

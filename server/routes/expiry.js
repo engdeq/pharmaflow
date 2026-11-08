@@ -1,21 +1,27 @@
 const express = require("express");
 const MedicineBatch = require("../models/MedicineBatch");
 const { authenticate, requirePermission } = require("../middleware/auth");
+const { requireTenant } = require("../middleware/tenant");
 const { ok } = require("../utils/response");
 const asyncHandler = require("../utils/asyncHandler");
+const { withTenant } = require("../utils/tenantScope");
 
 const router = express.Router();
-router.use(authenticate, requirePermission("expiry.view"));
+router.use(authenticate);
+router.use(requireTenant);
+router.use(requirePermission("expiry.view"));
 
 router.get(
   "/",
-  asyncHandler(async (_req, res) => {
+  asyncHandler(async (req, res) => {
     const now = new Date();
     const d7 = new Date(now.getTime() + 7 * 86400000);
     const d30 = new Date(now.getTime() + 30 * 86400000);
     const d90 = new Date(now.getTime() + 90 * 86400000);
 
-    const batches = await MedicineBatch.find({ quantity: { $gt: 0 } })
+    const batches = await MedicineBatch.find(
+      withTenant(req, { quantity: { $gt: 0 } })
+    )
       .populate("medicine", "name")
       .populate("supplier", "name")
       .sort({ expiryDate: 1 });

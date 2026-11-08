@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { applyTenantPlugin } = require("../utils/tenantPlugin");
 
 const purchaseItemSchema = new mongoose.Schema(
   {
@@ -15,7 +16,7 @@ const purchaseItemSchema = new mongoose.Schema(
 
 const purchaseSchema = new mongoose.Schema(
   {
-    purchaseNumber: { type: String, required: true, unique: true },
+    purchaseNumber: { type: String, required: true },
     supplier: { type: mongoose.Schema.Types.ObjectId, ref: "Supplier", required: true },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     items: [purchaseItemSchema],
@@ -35,5 +36,9 @@ const purchaseSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+applyTenantPlugin(purchaseSchema, { branch: true });
+purchaseSchema.index({ tenantId: 1, purchaseNumber: 1 }, { unique: true });
+purchaseSchema.index({ tenantId: 1, status: 1, createdAt: -1 });
 
 module.exports = mongoose.model("Purchase", purchaseSchema);

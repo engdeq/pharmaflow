@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { applyTenantPlugin } = require("../utils/tenantPlugin");
 
 const inventoryTransactionSchema = new mongoose.Schema(
   {
@@ -6,7 +7,7 @@ const inventoryTransactionSchema = new mongoose.Schema(
     batch: { type: mongoose.Schema.Types.ObjectId, ref: "MedicineBatch" },
     type: {
       type: String,
-      enum: ["stock_in", "stock_out", "adjustment", "sale", "purchase", "expiry_writeoff"],
+      enum: ["stock_in", "stock_out", "adjustment", "sale", "purchase", "expiry_writeoff", "transfer"],
       required: true,
     },
     quantity: { type: Number, required: true },
@@ -18,5 +19,8 @@ const inventoryTransactionSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+applyTenantPlugin(inventoryTransactionSchema, { branch: true });
+inventoryTransactionSchema.index({ tenantId: 1, medicine: 1, createdAt: -1 });
 
 module.exports = mongoose.model("InventoryTransaction", inventoryTransactionSchema);

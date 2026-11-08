@@ -1,9 +1,12 @@
 const bcrypt = require("bcryptjs");
 const Permission = require("../models/Permission");
 const Role = require("../models/Role");
-const Menu = require("../models/Menu");
 const User = require("../models/User");
 const Settings = require("../models/Settings");
+const Company = require("../models/Company");
+const Menu = require("../models/Menu");
+const { migrateToMultiTenant, ensurePlatformAdmin } = require("./migrateToMultiTenant");
+const { seedHierarchicalMenus } = require("./resyncMenus");
 
 const PERMISSIONS = [
   ["dashboard.view", "dashboard", "view"],
@@ -45,28 +48,16 @@ const PERMISSIONS = [
   ["categories.delete", "categories", "delete"],
   ["expiry.view", "expiry", "view"],
   ["audit.view", "audit", "view"],
+  ["branches.manage", "branches", "manage"],
+  ["modules.manage", "modules", "manage"],
+  ["branding.manage", "branding", "manage"],
 ];
 
-async function seedDatabase() {
-  const permCount = await Permission.countDocuments();
-  if (permCount === 0) {
-    await Permission.insertMany(
-      PERMISSIONS.map(([key, module, action]) => ({
-        key,
-        module,
-        action,
-        description: `${action} ${module}`,
-      }))
-    );
-    console.log("Permissions seeded");
-  }
-
-  const allPerms = await Permission.find();
+async function ensureRolesForTenant(tenantId, allPerms, permMap) {
   const permIds = allPerms.map((p) => p._id);
-  const permMap = Object.fromEntries(allPerms.map((p) => [p.key, p._id]));
-
   const roleDefs = [
-    { name: "Super Admin", description: "Full system access", all: true, isSystem: true },
+    { name: "Company Owner", description: "Full company access", all: true, isSystem: true },
+    { name: "Super Admin", description: "Full company access (legacy)", all: true, isSystem: true },
     {
       name: "Admin",
       description: "Administrative access",
@@ -142,46 +133,64 @@ async function seedDatabase() {
     {
       name: "Accountant",
       description: "Reports and finances",
+      keys: ["dashboard.view", "reports.view", "reports.export", "sales.view", "purchases.view"],
+      isSystem: true,
+    },
+    {
+      name: "Branch Manager",
+      description: "Manage a single branch",
       keys: [
         "dashboard.view",
-        "reports.view",
-        "reports.export",
+        "medicines.view",
         "sales.view",
+        "sales.create",
+        "inventory.view",
         "purchases.view",
+        "customers.view",
+        "expiry.view",
       ],
       isSystem: true,
     },
   ];
 
   for (const def of roleDefs) {
-    let role = await Role.findOne({ name: def.name });
+    let role = await Role.findOne({ tenantId, name: def.name });
     if (!role) {
       role = await Role.create({
+        tenantId,
         name: def.name,
         description: def.description,
         isSystem: def.isSystem,
-        permissions: def.all
-          ? permIds
-          : (def.keys || []).map((k) => permMap[k]).filter(Boolean),
+        permissions: def.all ? permIds : (def.keys || []).map((k) => permMap[k]).filter(Boolean),
       });
-      console.log(`Role created: ${def.name}`);
+      console.log(`Role created [${tenantId}]: ${def.name}`);
+    } else if (def.all && role.permissions.length !== permIds.length) {
+      role.permissions = permIds;
+      await role.save();
     }
   }
+}
 
-  // Super Admin gets wildcard conceptually via all permissions
-  const superAdmin = await Role.findOne({ name: "Super Admin" });
-  if (superAdmin && superAdmin.permissions.length !== permIds.length) {
-    superAdmin.permissions = permIds;
-    await superAdmin.save();
-  }
-
-  const menuCount = await Menu.countDocuments();
-  const nestedCount = await Menu.countDocuments({ parent: { $ne: null } });
-  const hasPurchaseCreate = await Menu.exists({ url: "/purchases/create" });
-  if (menuCount === 0 || nestedCount === 0 || !hasPurchaseCreate) {
-    const { seedHierarchicalMenus } = require("./resyncMenus");
-    await seedHierarchicalMenus();
-    console.log("Menus seeded (hierarchical)");
+async function seedDatabase() {
+  const permCount = await Permission.countDocuments();
+  if (permCount === 0) {
+    await Permission.insertMany(
+      PERMISSIONS.map(([key, module, action]) => ({
+        key,
+        module,
+        action,
+        description: `${action} ${module}`,
+      }))
+    );
+    console.log("Permissions seeded");
+  } else {
+    // Add any new permission keys without wiping
+    for (const [key, module, action] of PERMISSIONS) {
+      const exists = await Permission.exists({ key });
+      if (!exists) {
+        await Permission.create({ key, module, action, description: `${action} ${module}` });
+      }
+    }
   }
 
   const settingsCount = await Settings.countDocuments();
@@ -190,29 +199,60 @@ async function seedDatabase() {
     console.log("Settings seeded");
   }
 
-  let admin = await User.findOne({ username: "admin" });
+  await migrateToMultiTenant();
+  await ensurePlatformAdmin();
+
+  const company = await Company.findOne({ status: "active" }).sort({ createdAt: 1 });
+  if (!company) {
+    throw new Error("No active company after migration.");
+  }
+
+  const allPerms = await Permission.find();
+  const permMap = Object.fromEntries(allPerms.map((p) => [p.key, p._id]));
+  await ensureRolesForTenant(company._id, allPerms, permMap);
+
+  const menuCount = await Menu.countDocuments({ tenantId: company._id });
+  if (menuCount === 0) {
+    await seedHierarchicalMenus(company._id);
+    console.log("Menus seeded for company");
+  }
+
+  const ownerRole =
+    (await Role.findOne({ tenantId: company._id, name: "Company Owner" })) ||
+    (await Role.findOne({ tenantId: company._id, name: "Super Admin" }));
+
+  let admin = await User.findOne({ username: "admin", tenantId: company._id });
   if (!admin) {
-    const hashed = await bcrypt.hash("Admin@123", 10);
+    admin = await User.findOne({ username: "admin" });
+  }
+  if (!admin) {
     admin = await User.create({
       username: "admin",
       email: "admin@pharmacy.local",
-      password: hashed,
-      fullName: "System Developer",
-      roles: [superAdmin._id],
+      password: await bcrypt.hash("Admin@123", 10),
+      fullName: "Company Owner",
+      roles: ownerRole ? [ownerRole._id] : [],
       status: "active",
       isProtected: true,
+      isPlatformAdmin: false,
+      tenantId: company._id,
     });
-    console.log("Protected developer created: admin / Admin@123");
-  } else if (!admin.isProtected) {
+    console.log("Company admin created: admin / Admin@123");
+  } else {
+    admin.tenantId = company._id;
+    admin.isPlatformAdmin = false;
     admin.isProtected = true;
-    admin.fullName = admin.fullName || "System Developer";
-    if (superAdmin) admin.roles = [superAdmin._id];
     admin.status = "active";
+    if (ownerRole) admin.roles = [ownerRole._id];
     await admin.save();
-    console.log("Admin account locked as protected developer");
   }
 
-  return { admin };
+  if (!company.ownerUserId) {
+    company.ownerUserId = admin._id;
+    await company.save();
+  }
+
+  return { admin, company };
 }
 
-module.exports = { seedDatabase };
+module.exports = { seedDatabase, ensureRolesForTenant, PERMISSIONS };

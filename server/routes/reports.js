@@ -5,11 +5,15 @@ const MedicineBatch = require("../models/MedicineBatch");
 const Customer = require("../models/Customer");
 const Supplier = require("../models/Supplier");
 const { authenticate, requirePermission } = require("../middleware/auth");
+const { requireTenant } = require("../middleware/tenant");
 const { ok } = require("../utils/response");
 const asyncHandler = require("../utils/asyncHandler");
+const { withTenant } = require("../utils/tenantScope");
 
 const router = express.Router();
-router.use(authenticate, requirePermission("reports.view"));
+router.use(authenticate);
+router.use(requireTenant);
+router.use(requirePermission("reports.view"));
 
 function dateFilter(query) {
   const filter = {};
@@ -24,7 +28,7 @@ function dateFilter(query) {
 router.get(
   "/sales",
   asyncHandler(async (req, res) => {
-    const filter = { ...dateFilter(req.query), status: "completed" };
+    const filter = withTenant(req, { ...dateFilter(req.query), status: "completed" });
     const items = await Sale.find(filter)
       .populate("cashier", "username")
       .populate("customer", "name")
@@ -45,7 +49,7 @@ router.get(
 router.get(
   "/purchases",
   asyncHandler(async (req, res) => {
-    const filter = dateFilter(req.query);
+    const filter = withTenant(req, dateFilter(req.query));
     const items = await Purchase.find(filter)
       .populate("supplier", "name")
       .sort({ createdAt: -1 });
@@ -55,8 +59,10 @@ router.get(
 
 router.get(
   "/inventory",
-  asyncHandler(async (_req, res) => {
-    const batches = await MedicineBatch.find({ quantity: { $gt: 0 } })
+  asyncHandler(async (req, res) => {
+    const batches = await MedicineBatch.find(
+      withTenant(req, { quantity: { $gt: 0 } })
+    )
       .populate("medicine", "name purchasePrice sellingPrice")
       .sort({ expiryDate: 1 });
     const valuation = batches.reduce(
@@ -70,12 +76,14 @@ router.get(
 router.get(
   "/profit-loss",
   asyncHandler(async (req, res) => {
-    const filter = { ...dateFilter(req.query), status: "completed" };
+    const filter = withTenant(req, { ...dateFilter(req.query), status: "completed" });
     const sales = await Sale.find(filter);
-    const purchases = await Purchase.find({
-      ...dateFilter(req.query),
-      status: "approved",
-    });
+    const purchases = await Purchase.find(
+      withTenant(req, {
+        ...dateFilter(req.query),
+        status: "approved",
+      })
+    );
     const revenue = sales.reduce((s, x) => s + x.total, 0);
     const cogs = purchases.reduce((s, x) => s + x.totalCost, 0);
     return ok(res, {
@@ -90,16 +98,16 @@ router.get(
 
 router.get(
   "/customers",
-  asyncHandler(async (_req, res) => {
-    const items = await Customer.find().sort({ totalSpending: -1 });
+  asyncHandler(async (req, res) => {
+    const items = await Customer.find(withTenant(req)).sort({ totalSpending: -1 });
     return ok(res, items);
   })
 );
 
 router.get(
   "/suppliers",
-  asyncHandler(async (_req, res) => {
-    const items = await Supplier.find().sort({ name: 1 });
+  asyncHandler(async (req, res) => {
+    const items = await Supplier.find(withTenant(req)).sort({ name: 1 });
     return ok(res, items);
   })
 );

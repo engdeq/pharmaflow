@@ -2,12 +2,21 @@ const express = require("express");
 const bcrypt = require("bcryptjs");
 const User = require("../models/User");
 const { authenticate, requirePermission } = require("../middleware/auth");
+const { requireTenant, sanitizeTenantPayload } = require("../middleware/tenant");
 const { ok, fail } = require("../utils/response");
 const asyncHandler = require("../utils/asyncHandler");
 const { writeAudit } = require("../services/auditService");
+const {
+  withTenant,
+  findTenantDoc,
+  denyCrossTenant,
+  tenantPayload,
+} = require("../utils/tenantScope");
 
 const router = express.Router();
-router.use(authenticate, requirePermission("users.manage"));
+router.use(authenticate);
+router.use(requireTenant);
+router.use(requirePermission("users.manage"));
 
 function isLockedUser(user) {
   return Boolean(user?.isProtected);
@@ -20,7 +29,9 @@ router.get(
     const limit = Math.min(100, parseInt(req.query.limit || "50", 10));
     const q = (req.query.q || "").trim();
     const role = req.query.role;
-    const filter = {};
+    const filter = withTenant(req, {
+      isPlatformAdmin: { $ne: true },
+    });
     if (q) {
       filter.$or = [
         { username: new RegExp(q, "i") },
@@ -51,21 +62,26 @@ router.post(
     if (!username || !email || !password) {
       return fail(res, "Username, email and password are required.");
     }
-    const exists = await User.findOne({
-      $or: [{ username }, { email: email.toLowerCase() }],
-    });
+    const exists = await User.findOne(
+      withTenant(req, {
+        $or: [{ username }, { email: email.toLowerCase() }],
+      })
+    );
     if (exists) return fail(res, "Username or email already exists.", 409);
 
-    const user = await User.create({
-      username,
-      email: email.toLowerCase(),
-      password: await bcrypt.hash(password, 10),
-      fullName: fullName || "",
-      phone: phone || "",
-      roles: roles || [],
-      status: status || "active",
-      isProtected: false,
-    });
+    const user = await User.create(
+      tenantPayload(req, {
+        username,
+        email: email.toLowerCase(),
+        password: await bcrypt.hash(password, 10),
+        fullName: fullName || "",
+        phone: phone || "",
+        roles: roles || [],
+        status: status || "active",
+        isProtected: false,
+        isPlatformAdmin: false,
+      })
+    );
 
     await writeAudit({
       user: req.user,
@@ -74,9 +90,10 @@ router.post(
       description: `Created user ${username}`,
       newValues: { username, email },
       ipAddress: req.ip,
+      tenantId: req.tenantId,
     });
 
-    const populated = await User.findById(user._id)
+    const populated = await User.findOne(withTenant(req, { _id: user._id }))
       .populate("roles", "name isSystem")
       .select("-password");
     return ok(res, populated, "User created.", 201);
@@ -86,20 +103,27 @@ router.post(
 router.put(
   "/:id",
   asyncHandler(async (req, res) => {
-    const prev = await User.findById(req.params.id);
-    if (!prev) return fail(res, "User not found.", 404);
-    if (isLockedUser(prev)) {
+    const userDoc = await findTenantDoc(User, req, req.params.id);
+    if (!userDoc) return denyCrossTenant(res);
+    if (userDoc.isPlatformAdmin) return denyCrossTenant(res);
+    if (isLockedUser(userDoc)) {
       return fail(res, "Protected developer account cannot be changed.", 403);
     }
 
-    const updates = { ...req.body };
+    const previousValues = {
+      username: userDoc.username,
+      status: userDoc.status,
+    };
+
+    const updates = sanitizeTenantPayload(req.body);
     delete updates.password;
     delete updates.isProtected;
+    delete updates.isPlatformAdmin;
     if (updates.email) updates.email = updates.email.toLowerCase();
 
-    const user = await User.findByIdAndUpdate(req.params.id, updates, {
-      new: true,
-    })
+    Object.assign(userDoc, updates);
+    await userDoc.save();
+    const user = await User.findOne(withTenant(req, { _id: userDoc._id }))
       .populate("roles", "name isSystem")
       .select("-password");
 
@@ -108,9 +132,10 @@ router.put(
       action: "update",
       module: "users",
       description: `Updated user ${user.username}`,
-      previousValues: { username: prev.username, status: prev.status },
+      previousValues,
       newValues: { username: user.username, status: user.status },
       ipAddress: req.ip,
+      tenantId: req.tenantId,
     });
 
     return ok(res, user, "User updated.");
@@ -121,8 +146,9 @@ router.post(
   "/:id/reset-password",
   asyncHandler(async (req, res) => {
     const password = req.body.password || "ChangeMe@123";
-    const user = await User.findById(req.params.id);
-    if (!user) return fail(res, "User not found.", 404);
+    const user = await findTenantDoc(User, req, req.params.id);
+    if (!user) return denyCrossTenant(res);
+    if (user.isPlatformAdmin) return denyCrossTenant(res);
     if (isLockedUser(user)) {
       return fail(res, "Protected developer account password cannot be reset here.", 403);
     }
@@ -134,6 +160,7 @@ router.post(
       module: "users",
       description: `Reset password for ${user.username}`,
       ipAddress: req.ip,
+      tenantId: req.tenantId,
     });
     return ok(res, null, "Password reset.");
   })
@@ -145,8 +172,9 @@ router.delete(
     if (String(req.user._id) === req.params.id) {
       return fail(res, "You cannot delete your own account.", 400);
     }
-    const user = await User.findById(req.params.id);
-    if (!user) return fail(res, "User not found.", 404);
+    const user = await findTenantDoc(User, req, req.params.id);
+    if (!user) return denyCrossTenant(res);
+    if (user.isPlatformAdmin) return denyCrossTenant(res);
     if (isLockedUser(user)) {
       return fail(res, "Protected developer account cannot be deleted.", 403);
     }
@@ -158,6 +186,7 @@ router.delete(
       description: `Deleted user ${user.username}`,
       previousValues: { username: user.username },
       ipAddress: req.ip,
+      tenantId: req.tenantId,
     });
     return ok(res, null, "User deleted.");
   })

@@ -2,13 +2,21 @@ const express = require("express");
 const mongoose = require("mongoose");
 const Purchase = require("../models/Purchase");
 const { authenticate, requirePermission } = require("../middleware/auth");
+const { requireTenant } = require("../middleware/tenant");
 const { ok, fail } = require("../utils/response");
 const asyncHandler = require("../utils/asyncHandler");
 const { addStock } = require("../services/stockService");
 const { writeAudit } = require("../services/auditService");
+const {
+  withTenant,
+  findTenantDoc,
+  denyCrossTenant,
+  tenantPayload,
+} = require("../utils/tenantScope");
 
 const router = express.Router();
 router.use(authenticate);
+router.use(requireTenant);
 
 function purchaseNumber() {
   return `P-${Date.now()}-${Math.floor(Math.random() * 900 + 100)}`;
@@ -18,7 +26,7 @@ router.get(
   "/",
   requirePermission("purchases.view"),
   asyncHandler(async (req, res) => {
-    const items = await Purchase.find()
+    const items = await Purchase.find(withTenant(req))
       .populate("supplier", "name")
       .populate("createdBy", "username")
       .sort({ createdAt: -1 });
@@ -46,15 +54,17 @@ router.post(
     }));
 
     const totalCost = mapped.reduce((s, i) => s + i.total, 0);
-    const purchase = await Purchase.create({
-      purchaseNumber: purchaseNumber(),
-      supplier: supplierId,
-      createdBy: req.user._id,
-      items: mapped,
-      totalCost,
-      paymentStatus,
-      status: "draft",
-    });
+    const purchase = await Purchase.create(
+      tenantPayload(req, {
+        purchaseNumber: purchaseNumber(),
+        supplier: supplierId,
+        createdBy: req.user._id,
+        items: mapped,
+        totalCost,
+        paymentStatus,
+        status: "draft",
+      })
+    );
 
     return ok(res, purchase, "Purchase created.", 201);
   })
@@ -64,8 +74,8 @@ router.post(
   "/:id/approve",
   requirePermission("purchases.approve"),
   asyncHandler(async (req, res) => {
-    const purchase = await Purchase.findById(req.params.id);
-    if (!purchase) return fail(res, "Purchase not found.", 404);
+    const purchase = await findTenantDoc(Purchase, req, req.params.id);
+    if (!purchase) return denyCrossTenant(res);
     if (purchase.status === "approved") {
       return fail(res, "Purchase already approved.");
     }
@@ -91,6 +101,7 @@ router.post(
           reference: purchase.purchaseNumber,
           userId: req.user._id,
           session,
+          tenantId: req.tenantId,
         });
       }
 
@@ -107,6 +118,7 @@ router.post(
         module: "purchases",
         description: `Approved purchase ${purchase.purchaseNumber}`,
         ipAddress: req.ip,
+        tenantId: req.tenantId,
       });
 
       return ok(res, purchase, "Purchase approved and stock updated.");

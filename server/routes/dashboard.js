@@ -1,4 +1,5 @@
 const express = require("express");
+const mongoose = require("mongoose");
 const Sale = require("../models/Sale");
 const Medicine = require("../models/Medicine");
 const MedicineBatch = require("../models/MedicineBatch");
@@ -6,11 +7,15 @@ const Customer = require("../models/Customer");
 const Supplier = require("../models/Supplier");
 const Purchase = require("../models/Purchase");
 const { authenticate, requirePermission } = require("../middleware/auth");
+const { requireTenant } = require("../middleware/tenant");
 const { ok } = require("../utils/response");
 const asyncHandler = require("../utils/asyncHandler");
+const { withTenant } = require("../utils/tenantScope");
 
 const router = express.Router();
-router.use(authenticate, requirePermission("dashboard.view"));
+router.use(authenticate);
+router.use(requireTenant);
+router.use(requirePermission("dashboard.view"));
 
 function rangeFromQuery(query) {
   const now = new Date();
@@ -49,6 +54,7 @@ router.get(
     const todayStart = new Date(now);
     todayStart.setHours(0, 0, 0, 0);
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const tenantId = new mongoose.Types.ObjectId(String(req.tenantId));
 
     const [
       salesAgg,
@@ -66,22 +72,40 @@ router.get(
       categoryStats,
     ] = await Promise.all([
       Sale.aggregate([
-        { $match: { createdAt: { $gte: start, $lte: end }, status: "completed" } },
+        {
+          $match: {
+            tenantId,
+            createdAt: { $gte: start, $lte: end },
+            status: "completed",
+          },
+        },
         { $group: { _id: null, total: { $sum: "$total" }, count: { $sum: 1 } } },
       ]),
       Sale.aggregate([
-        { $match: { createdAt: { $gte: todayStart }, status: "completed" } },
+        {
+          $match: {
+            tenantId,
+            createdAt: { $gte: todayStart },
+            status: "completed",
+          },
+        },
         { $group: { _id: null, total: { $sum: "$total" } } },
       ]),
       Sale.aggregate([
-        { $match: { createdAt: { $gte: monthStart }, status: "completed" } },
+        {
+          $match: {
+            tenantId,
+            createdAt: { $gte: monthStart },
+            status: "completed",
+          },
+        },
         { $group: { _id: null, total: { $sum: "$total" } } },
       ]),
-      Medicine.countDocuments({ isActive: true }),
-      Customer.countDocuments({ isActive: true }),
-      Supplier.countDocuments({ isActive: true }),
+      Medicine.countDocuments(withTenant(req, { isActive: true })),
+      Customer.countDocuments(withTenant(req, { isActive: true })),
+      Supplier.countDocuments(withTenant(req, { isActive: true })),
       MedicineBatch.aggregate([
-        { $match: { quantity: { $gt: 0 } } },
+        { $match: { tenantId, quantity: { $gt: 0 } } },
         {
           $lookup: {
             from: "medicines",
@@ -91,6 +115,7 @@ router.get(
           },
         },
         { $unwind: "$med" },
+        { $match: { "med.tenantId": tenantId } },
         {
           $group: {
             _id: "$medicine",
@@ -101,21 +126,29 @@ router.get(
         },
         { $match: { $expr: { $lte: ["$qty", "$minStock"] } } },
       ]),
-      MedicineBatch.countDocuments({
-        quantity: { $gt: 0 },
-        expiryDate: { $lt: now },
-      }),
-      Sale.find({ status: "completed" })
+      MedicineBatch.countDocuments(
+        withTenant(req, {
+          quantity: { $gt: 0 },
+          expiryDate: { $lt: now },
+        })
+      ),
+      Sale.find(withTenant(req, { status: "completed" }))
         .populate("customer", "name")
         .populate("cashier", "username")
         .sort({ createdAt: -1 })
         .limit(8),
-      Purchase.find()
+      Purchase.find(withTenant(req))
         .populate("supplier", "name")
         .sort({ createdAt: -1 })
         .limit(8),
       Sale.aggregate([
-        { $match: { createdAt: { $gte: start, $lte: end }, status: "completed" } },
+        {
+          $match: {
+            tenantId,
+            createdAt: { $gte: start, $lte: end },
+            status: "completed",
+          },
+        },
         {
           $group: {
             _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
@@ -126,7 +159,13 @@ router.get(
         { $sort: { _id: 1 } },
       ]),
       Sale.aggregate([
-        { $match: { createdAt: { $gte: start, $lte: end }, status: "completed" } },
+        {
+          $match: {
+            tenantId,
+            createdAt: { $gte: start, $lte: end },
+            status: "completed",
+          },
+        },
         { $unwind: "$items" },
         {
           $group: {
@@ -139,6 +178,7 @@ router.get(
         { $limit: 8 },
       ]),
       Medicine.aggregate([
+        { $match: { tenantId } },
         {
           $lookup: {
             from: "categories",

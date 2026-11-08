@@ -6,12 +6,11 @@ require("dotenv").config();
 const { connectDB, disconnectDB } = require("../config/db");
 const Menu = require("../models/Menu");
 
-async function create(data) {
-  return Menu.create(data);
-}
+async function seedHierarchicalMenus(tenantId) {
+  if (!tenantId) throw new Error("tenantId is required to seed menus");
+  await Menu.deleteMany({ tenantId });
 
-async function seedHierarchicalMenus() {
-  await Menu.deleteMany({});
+  const create = (data) => Menu.create({ ...data, tenantId });
 
   // 1. Dashboard
   await create({
@@ -21,6 +20,7 @@ async function seedHierarchicalMenus() {
     url: "/dashboard",
     order: 1,
     permissionKey: "dashboard.view",
+    moduleKey: "dashboard",
     parent: null,
   });
 
@@ -254,15 +254,18 @@ async function seedHierarchicalMenus() {
     parent: admin._id,
   });
 
-  const total = await Menu.countDocuments();
-  console.log(`Menus resynced: ${total} items`);
+  const total = await Menu.countDocuments({ tenantId });
+  console.log(`Menus resynced for tenant ${tenantId}: ${total} items`);
   return total;
 }
 
 async function resyncMenus() {
   await connectDB();
   try {
-    await seedHierarchicalMenus();
+    const Company = require("../models/Company");
+    const company = await Company.findOne({ status: "active" }).sort({ createdAt: 1 });
+    if (!company) throw new Error("No active company found. Run seed/migrate first.");
+    await seedHierarchicalMenus(company._id);
   } finally {
     await disconnectDB();
   }

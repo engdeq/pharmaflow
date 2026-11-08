@@ -7,7 +7,8 @@
     "start": "node index.js",
     "dev": "nodemon index.js",
     "seed": "node -e \"require('./config/db').connectDB().then(()=>require('./seed/seed').seedDatabase()).then(()=>process.exit(0))\"",
-    "resync-menus": "node seed/resyncMenus.js"
+    "resync-menus": "node seed/resyncMenus.js",
+    "migrate:tenant": "node seed/migrateToMultiTenant.js"
   },
   "keywords": [],
   "author": "",

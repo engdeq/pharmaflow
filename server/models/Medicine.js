@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { applyTenantPlugin } = require("../utils/tenantPlugin");
 
 const medicineSchema = new mongoose.Schema(
   {
@@ -21,6 +22,10 @@ const medicineSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+applyTenantPlugin(medicineSchema, { branch: true });
 medicineSchema.index({ name: "text", genericName: "text", barcode: "text", sku: "text" });
+medicineSchema.index({ tenantId: 1, name: 1 });
+medicineSchema.index({ tenantId: 1, barcode: 1 });
+medicineSchema.index({ tenantId: 1, sku: 1 });
 
 module.exports = mongoose.model("Medicine", medicineSchema);
