@@ -14,6 +14,14 @@ async function resolveTenant(req, res, next) {
     req.company = null;
     req.branchIds = (req.user.branchIds || []).map((id) => String(id));
 
+    // Host/path hint for auditing & future subdomain routing (never trusts body tenantId)
+    try {
+      const { resolveTenantFromRequest } = require("../services/tenantResolver");
+      req.hostTenant = await resolveTenantFromRequest(req);
+    } catch {
+      req.hostTenant = null;
+    }
+
     if (req.isPlatformAdmin) {
       return next();
     }

@@ -130,7 +130,7 @@ function splitMenus(menus) {
 }
 
 export default function AdminLayout() {
-  const { user, menus, logout, company, isPlatformAdmin } = useAuth();
+  const { user, menus, logout, company } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
@@ -199,12 +199,8 @@ export default function AdminLayout() {
             )}
           </div>
           <div className="brand-copy">
-            <strong>
-              {isPlatformAdmin
-                ? "PharmaCore Platform"
-                : company?.branding?.pharmacyName || company?.name || "PharmaCore"}
-            </strong>
-            <span>{isPlatformAdmin ? "Super Admin" : company?.branding?.tagline || "Pharmacy OS"}</span>
+            <strong>{company?.branding?.pharmacyName || company?.name || "Pharmacy"}</strong>
+            <span>{company?.branding?.tagline || "Pharmacy OS"}</span>
           </div>
           <button type="button" className="icon-btn mobile-only" onClick={() => setMobileOpen(false)}>
             <X size={18} />
@@ -311,11 +307,11 @@ export default function AdminLayout() {
         </main>
 
         <footer className="admin-footer">
-          <span>PharmaCore v2.0.0</span>
+          <span>{company?.name || "Pharmacy"} · powered by MedAxis</span>
           <span>
             <span className="status-dot" /> System Online
           </span>
-          <span>© {new Date().getFullYear()} Pharmacy Management</span>
+          <span>© {new Date().getFullYear()} MedAxis</span>
         </footer>
       </div>
 

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import PageHeader from "../../components/ui/PageHeader";
 import Modal from "../../components/ui/Modal";
 import Skeleton from "../../components/ui/Skeleton";
@@ -31,12 +32,15 @@ const emptyForm = {
   slug: "",
   logo: "",
   legalName: "",
+  registrationNumber: "",
+  licenseNumber: "",
   phone: "",
   email: "",
   address: "",
   city: "",
   country: "",
   plan: "trial",
+  status: "active",
   branding: { ...DEFAULT_BRANDING },
   ownerFullName: "",
   ownerUsername: "",
@@ -47,6 +51,7 @@ const emptyForm = {
 
 export default function PlatformCompaniesPage() {
   const toast = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -77,6 +82,14 @@ export default function PlatformCompaniesPage() {
     setOpen(true);
   };
 
+  useEffect(() => {
+    if (searchParams.get("register") === "1") {
+      openCreate();
+      setSearchParams({}, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
   const openEdit = (c) => {
     setEditing(c);
     setCreatedHint(null);
@@ -86,12 +99,15 @@ export default function PlatformCompaniesPage() {
       slug: c.slug || "",
       logo: c.logo || c.branding?.logo || "",
       legalName: c.legalName || "",
+      registrationNumber: c.registrationNumber || "",
+      licenseNumber: c.licenseNumber || "",
       phone: c.phone || "",
       email: c.email || "",
       address: c.address || "",
       city: c.city || "",
       country: c.country || "",
       plan: c.subscription?.plan || "trial",
+      status: c.status || "active",
       branding: { ...DEFAULT_BRANDING, ...(c.branding || {}) },
     });
     setOpen(true);
@@ -284,6 +300,20 @@ export default function PlatformCompaniesPage() {
               <input value={form.legalName} onChange={(e) => setForm((p) => ({ ...p, legalName: e.target.value }))} />
             </label>
             <label>
+              Registration Number
+              <input
+                value={form.registrationNumber}
+                onChange={(e) => setForm((p) => ({ ...p, registrationNumber: e.target.value }))}
+              />
+            </label>
+            <label>
+              Pharmacy License Number
+              <input
+                value={form.licenseNumber}
+                onChange={(e) => setForm((p) => ({ ...p, licenseNumber: e.target.value }))}
+              />
+            </label>
+            <label>
               Email
               <input value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} />
             </label>
@@ -310,6 +340,14 @@ export default function PlatformCompaniesPage() {
                 <option value="starter">Starter</option>
                 <option value="professional">Professional</option>
                 <option value="enterprise">Enterprise</option>
+              </select>
+            </label>
+            <label>
+              Company Status
+              <select value={form.status} onChange={(e) => setForm((p) => ({ ...p, status: e.target.value }))}>
+                <option value="active">Active</option>
+                <option value="pending">Pending Approval</option>
+                <option value="suspended">Suspended</option>
               </select>
             </label>
 

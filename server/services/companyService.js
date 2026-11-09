@@ -153,6 +153,29 @@ async function provisionCompany({
   company.ownerUserId = owner._id;
   await company.save();
 
+  // Register default subdomain mapping (not live until DNS + SSL verified)
+  try {
+    const CompanyDomain = require("../models/CompanyDomain");
+    const base = String(process.env.MEDAXIS_BASE_DOMAIN || "medaxis.dirshay.com").toLowerCase();
+    const hostname = `${company.slug}.${base}`;
+    await CompanyDomain.findOneAndUpdate(
+      { hostname },
+      {
+        companyId: company._id,
+        tenantId: company._id,
+        hostname,
+        type: "subdomain",
+        isPrimary: true,
+        status: "pending",
+        sslStatus: "none",
+        notes: "Auto-created on pharmacy registration. Activate after DNS/SSL.",
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+  } catch (err) {
+    console.warn("Domain registration skipped:", err.message);
+  }
+
   return { company, branch, owner };
 }
 

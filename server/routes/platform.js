@@ -1,5 +1,6 @@
 const express = require("express");
 const Company = require("../models/Company");
+const CompanyDomain = require("../models/CompanyDomain");
 const User = require("../models/User");
 const Branch = require("../models/Branch");
 const { authenticate } = require("../middleware/auth");
@@ -27,6 +28,9 @@ router.get(
       pendingCompanies,
       totalUsers,
       totalBranches,
+      trialCompanies,
+      activeSubscriptions,
+      planGroups,
     ] = await Promise.all([
       Company.countDocuments(),
       Company.countDocuments({ status: "active" }),
@@ -34,6 +38,9 @@ router.get(
       Company.countDocuments({ status: "pending" }),
       User.countDocuments({ isPlatformAdmin: { $ne: true } }),
       Branch.countDocuments(),
+      Company.countDocuments({ "subscription.plan": "trial" }),
+      Company.countDocuments({ "subscription.status": { $in: ["active", "trialing"] } }),
+      Company.aggregate([{ $group: { _id: "$subscription.plan", value: { $sum: 1 } } }]),
     ]);
 
     return ok(res, {
@@ -43,7 +50,20 @@ router.get(
       pendingCompanies,
       totalUsers,
       totalBranches,
+      trialCompanies,
+      activeSubscriptions,
       plans: PLAN_LIMITS,
+      subscriptionDistribution: planGroups.map((p) => ({
+        name: p._id || "unknown",
+        value: p.value,
+      })),
+      registrationGrowth: [
+        { name: "Total", companies: totalCompanies },
+        { name: "Active", companies: activeCompanies },
+        { name: "Trial", companies: trialCompanies },
+        { name: "Pending", companies: pendingCompanies },
+        { name: "Suspended", companies: suspendedCompanies },
+      ],
     });
   })
 );
@@ -93,6 +113,8 @@ router.post(
       branding,
       primaryColor,
       secondaryColor,
+      registrationNumber,
+      licenseNumber,
       ownerFullName,
       ownerUsername,
       ownerEmail,
@@ -114,6 +136,8 @@ router.post(
           name,
           slug,
           legalName,
+          registrationNumber,
+          licenseNumber,
           phone,
           email,
           address,
@@ -127,6 +151,7 @@ router.post(
           tagline,
           primaryColor,
           secondaryColor,
+          branding,
           branding: branding || {},
         },
         ownerInput: {
@@ -295,6 +320,56 @@ router.get(
     const slug = String(req.params.slug || "").toLowerCase();
     const exists = await Company.exists({ slug });
     return ok(res, { slug, available: !exists, suggestion: exists ? await uniqueSlug(slug) : slug });
+  })
+);
+
+router.get(
+  "/domains",
+  asyncHandler(async (_req, res) => {
+    const domains = await CompanyDomain.find()
+      .populate("companyId", "name slug status")
+      .sort({ createdAt: -1 })
+      .lean();
+    return ok(res, domains);
+  })
+);
+
+router.post(
+  "/domains",
+  asyncHandler(async (req, res) => {
+    const companyId = req.body.companyId;
+    const hostname = String(req.body.hostname || "")
+      .trim()
+      .toLowerCase();
+    const type = req.body.type === "custom" ? "custom" : "subdomain";
+    if (!companyId || !hostname) return fail(res, "companyId and hostname are required.", 400);
+
+    const company = await Company.findById(companyId);
+    if (!company) return fail(res, "Company not found.", 404);
+
+    const taken = await CompanyDomain.exists({ hostname });
+    if (taken) return fail(res, "Hostname already assigned.", 409);
+
+    const domain = await CompanyDomain.create({
+      companyId: company._id,
+      tenantId: company._id,
+      hostname,
+      type,
+      isPrimary: Boolean(req.body.isPrimary),
+      status: req.body.status || "pending",
+      sslStatus: "none",
+      notes: req.body.notes || "",
+    });
+
+    await writeAudit({
+      user: req.user,
+      action: "create",
+      module: "platform",
+      description: `Assigned domain ${hostname} to ${company.name}`,
+      ipAddress: req.ip,
+    });
+
+    return ok(res, domain, "Domain registered (pending DNS/SSL verification).", 201);
   })
 );
 

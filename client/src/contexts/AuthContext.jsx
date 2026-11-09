@@ -3,6 +3,16 @@ import { authApi } from "../services/api";
 
 const AuthContext = createContext(null);
 
+function applyMedAxisPlatformTheme() {
+  const root = document.documentElement;
+  root.style.setProperty("--primary", "#315FF4");
+  root.style.setProperty("--primary-dark", "#2448C7");
+  root.style.setProperty("--primary-hover", "#315FF4");
+  root.style.setProperty("--sidebar", "#0F1B33");
+  root.style.setProperty("--topbar", "#FFFFFF");
+  root.style.setProperty("--bg", "#F4F7FC");
+}
+
 function applyCompanyBranding(company) {
   const root = document.documentElement;
   const branding = company?.branding || {};
@@ -38,7 +48,8 @@ export function AuthProvider({ children }) {
       const nextUser = meRes.data;
       setUser(nextUser);
       setMenus(menuRes.data || []);
-      if (nextUser?.company) applyCompanyBranding(nextUser.company);
+      if (nextUser?.isPlatformAdmin) applyMedAxisPlatformTheme();
+      else if (nextUser?.company) applyCompanyBranding(nextUser.company);
       return nextUser;
     } catch {
       localStorage.removeItem("pharmacy_token");
