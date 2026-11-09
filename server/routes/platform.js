@@ -3,9 +3,11 @@ const bcrypt = require("bcryptjs");
 const Company = require("../models/Company");
 const CompanyDomain = require("../models/CompanyDomain");
 const GlobalMenu = require("../models/GlobalMenu");
+const Menu = require("../models/Menu");
 const SubscriptionPlan = require("../models/SubscriptionPlan");
 const User = require("../models/User");
 const Branch = require("../models/Branch");
+const { seedHierarchicalMenus } = require("../seed/resyncMenus");
 const { authenticate } = require("../middleware/auth");
 const { requirePlatformAdmin } = require("../middleware/tenant");
 const { ok, fail } = require("../utils/response");
@@ -518,6 +520,77 @@ router.delete(
     const menu = await GlobalMenu.findByIdAndDelete(req.params.id);
     if (!menu) return fail(res, "Menu not found.", 404);
     return ok(res, { id: req.params.id }, "Global menu deleted.");
+  })
+);
+
+/* ---------- Per-company menus (platform controls each pharmacy separately) ---------- */
+router.get(
+  "/companies/:id/menus",
+  asyncHandler(async (req, res) => {
+    const company = await Company.findById(req.params.id).lean();
+    if (!company) return fail(res, "Company not found.", 404);
+
+    let menus = await Menu.find({ tenantId: company._id }).sort({ order: 1 }).lean();
+    if (!menus.length) {
+      await seedHierarchicalMenus(company._id);
+      menus = await Menu.find({ tenantId: company._id }).sort({ order: 1 }).lean();
+    }
+
+    const parentMap = Object.fromEntries(menus.map((m) => [String(m._id), m.name]));
+    const rows = menus.map((m) => ({
+      ...m,
+      parentName: m.parent ? parentMap[String(m.parent)] || "" : "",
+    }));
+
+    return ok(res, {
+      company: {
+        id: company._id,
+        name: company.name,
+        slug: company.slug,
+        phone: company.phone,
+        email: company.email,
+        status: company.status,
+      },
+      menus: rows,
+    });
+  })
+);
+
+router.put(
+  "/companies/:id/menus/:menuId",
+  asyncHandler(async (req, res) => {
+    const company = await Company.findById(req.params.id);
+    if (!company) return fail(res, "Company not found.", 404);
+
+    const menu = await Menu.findOne({ _id: req.params.menuId, tenantId: company._id });
+    if (!menu) return fail(res, "Menu not found for this company.", 404);
+
+    if (req.body.isActive !== undefined) menu.isActive = Boolean(req.body.isActive);
+    if (req.body.label !== undefined) menu.label = req.body.label;
+    if (req.body.order !== undefined) menu.order = Number(req.body.order);
+    if (req.body.icon !== undefined) menu.icon = req.body.icon;
+    await menu.save();
+
+    await writeAudit({
+      user: req.user,
+      action: "update",
+      module: "platform-menus",
+      description: `${menu.isActive ? "Enabled" : "Disabled"} menu "${menu.label}" for ${company.name}`,
+      ipAddress: req.ip,
+    });
+
+    return ok(res, menu, menu.isActive ? "Menu enabled for company." : "Menu disabled for company.");
+  })
+);
+
+router.post(
+  "/companies/:id/menus/resync",
+  asyncHandler(async (req, res) => {
+    const company = await Company.findById(req.params.id);
+    if (!company) return fail(res, "Company not found.", 404);
+    await seedHierarchicalMenus(company._id);
+    const menus = await Menu.find({ tenantId: company._id }).sort({ order: 1 }).lean();
+    return ok(res, menus, "Company menus resynced from platform template.");
   })
 );
 
