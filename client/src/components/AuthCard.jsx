@@ -1,15 +1,21 @@
 import { useEffect, useState } from "react";
 import {
+  Apple,
   Building2,
   Cross,
+  Droplet,
   Eye,
   EyeOff,
+  FlaskConical,
   Lock,
   LogIn,
   Package,
   Pill,
-  ShoppingCart,
+  Plus,
+  ShoppingBasket,
+  Stethoscope,
   Syringe,
+  Tablets,
   User,
   Users,
 } from "lucide-react";
@@ -20,15 +26,17 @@ import "./AuthCard.css";
 const emptyLogin = { companySlug: "", username: "", password: "" };
 const emptyRegister = { username: "", email: "", password: "" };
 
+const ICON_PROPS = { size: 28, strokeWidth: 2.2, color: "#FFFFFF", absoluteStrokeWidth: false };
+
 const FEATURES = [
   { label: "Capsules", Icon: Pill },
-  { label: "Tablets", Icon: Package },
-  { label: "Syrup", Icon: Syringe },
+  { label: "Tablets", Icon: Tablets },
+  { label: "Syrup", Icon: FlaskConical },
   { label: "Injection", Icon: Syringe },
-  { label: "Vitamins", Icon: Pill },
-  { label: "Equipment", Icon: Package },
+  { label: "Vitamins", Icon: Apple },
+  { label: "Equipment", Icon: Stethoscope },
   { label: "First Aid", Icon: Cross },
-  { label: "Creams", Icon: Package },
+  { label: "Creams", Icon: Droplet },
 ];
 
 function resolveInitialSlug() {
@@ -48,11 +56,31 @@ function BrandMark({ light = false }) {
   return (
     <div className={`mx-auth-brand${light ? " light" : ""}`}>
       <div className="mx-auth-logo">
-        <Cross size={18} strokeWidth={2.5} />
+        <Plus size={32} strokeWidth={2.4} color="#FFFFFF" />
       </div>
       <div>
         <strong>MedAxis</strong>
         <span>Pharmacy SaaS</span>
+      </div>
+    </div>
+  );
+}
+
+function PharmacyHeroArt() {
+  return (
+    <div className="mx-auth-hero-art" aria-hidden="true">
+      <div className="mx-auth-orb" />
+      <div className="mx-auth-float mx-auth-float-cross">
+        <Plus size={72} strokeWidth={2.2} color="#FFFFFF" />
+      </div>
+      <div className="mx-auth-float mx-auth-float-capsule">
+        <Pill size={30} strokeWidth={2.2} color="#FFFFFF" />
+      </div>
+      <div className="mx-auth-float mx-auth-float-bottle">
+        <FlaskConical size={34} strokeWidth={2.2} color="#FFFFFF" />
+      </div>
+      <div className="mx-auth-float mx-auth-float-basket">
+        <ShoppingBasket size={68} strokeWidth={2.1} color="#FFFFFF" />
       </div>
     </div>
   );
@@ -138,39 +166,40 @@ export default function AuthCard({ onLoginSuccess }) {
           <div className="mx-auth-features">
             {FEATURES.map(({ label, Icon }) => (
               <div key={label} className="mx-auth-feature">
-                <Icon size={20} />
+                <span className="mx-auth-feature-icon">
+                  <Icon {...ICON_PROPS} />
+                </span>
                 <span>{label}</span>
               </div>
             ))}
           </div>
 
-          <div className="mx-auth-hero-art" aria-hidden="true">
-            <div className="mx-auth-orb" />
-            <div className="mx-auth-pill mx-auth-pill-a" />
-            <div className="mx-auth-pill mx-auth-pill-b" />
-            <div className="mx-auth-bag">
-              <ShoppingCart size={42} />
-            </div>
-          </div>
+          <PharmacyHeroArt />
         </div>
 
         <div className="mx-auth-stats">
           <div>
-            <Package size={16} />
+            <span className="mx-auth-stat-icon">
+              <Package size={20} strokeWidth={2.2} color="#FFFFFF" />
+            </span>
             <div>
               <strong>3,240+</strong>
               <span>Medicines</span>
             </div>
           </div>
           <div>
-            <Users size={16} />
+            <span className="mx-auth-stat-icon">
+              <Users size={20} strokeWidth={2.2} color="#FFFFFF" />
+            </span>
             <div>
               <strong>1,284+</strong>
               <span>Customers</span>
             </div>
           </div>
           <div>
-            <ShoppingCart size={16} />
+            <span className="mx-auth-stat-icon">
+              <ShoppingBasket size={20} strokeWidth={2.2} color="#FFFFFF" />
+            </span>
             <div>
               <strong>428K+</strong>
               <span>Total Sales</span>
