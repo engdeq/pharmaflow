@@ -42,7 +42,6 @@ export default function SettingsPage() {
       <div className="card">
         <div className="form-grid">
           {[
-            ["pharmacyName", "Pharmacy Name"],
             ["phone", "Phone"],
             ["email", "Email"],
             ["currency", "Currency"],

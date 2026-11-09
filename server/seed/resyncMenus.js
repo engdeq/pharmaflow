@@ -254,16 +254,6 @@ async function seedHierarchicalMenus(tenantId) {
     moduleKey: "settings",
     parent: admin._id,
   });
-  await create({
-    name: "branding",
-    label: "Branding",
-    icon: "Palette",
-    url: "/settings/branding",
-    order: 7,
-    permissionKey: "branding.manage",
-    moduleKey: "settings",
-    parent: admin._id,
-  });
 
   const total = await Menu.countDocuments({ tenantId });
   console.log(`Menus resynced for tenant ${tenantId}: ${total} items`);
@@ -274,9 +264,12 @@ async function resyncMenus() {
   await connectDB();
   try {
     const Company = require("../models/Company");
-    const company = await Company.findOne({ status: "active" }).sort({ createdAt: 1 });
-    if (!company) throw new Error("No active company found. Run seed/migrate first.");
-    await seedHierarchicalMenus(company._id);
+    const companies = await Company.find({}).select("_id name slug");
+    if (!companies.length) throw new Error("No company found. Run seed/migrate first.");
+    for (const company of companies) {
+      await seedHierarchicalMenus(company._id);
+      console.log(`Menus resynced: ${company.name || company.slug}`);
+    }
   } finally {
     await disconnectDB();
   }

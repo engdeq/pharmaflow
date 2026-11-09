@@ -29,6 +29,7 @@ const COLOR_FIELDS = [
 const emptyForm = {
   name: "",
   slug: "",
+  logo: "",
   legalName: "",
   phone: "",
   email: "",
@@ -83,6 +84,7 @@ export default function PlatformCompaniesPage() {
       ...emptyForm,
       name: c.name || "",
       slug: c.slug || "",
+      logo: c.logo || c.branding?.logo || "",
       legalName: c.legalName || "",
       phone: c.phone || "",
       email: c.email || "",
@@ -103,6 +105,7 @@ export default function PlatformCompaniesPage() {
     try {
       const brandingPayload = {
         pharmacyName: form.name,
+        logo: form.logo,
         ...form.branding,
       };
       if (editing) {
@@ -111,6 +114,7 @@ export default function PlatformCompaniesPage() {
           body: {
             name: form.name,
             slug: form.slug,
+            logo: form.logo,
             legalName: form.legalName,
             phone: form.phone,
             email: form.email,
@@ -128,6 +132,7 @@ export default function PlatformCompaniesPage() {
           method: "POST",
           body: {
             ...form,
+            logo: form.logo,
             branding: brandingPayload,
           },
           successMessage: "Pharmacy registered",
@@ -264,6 +269,14 @@ export default function PlatformCompaniesPage() {
                 value={form.slug}
                 placeholder="e.g. deq-pharma"
                 onChange={(e) => setForm((p) => ({ ...p, slug: e.target.value.toLowerCase() }))}
+              />
+            </label>
+            <label style={{ gridColumn: "1 / -1" }}>
+              Logo URL
+              <input
+                value={form.logo || ""}
+                placeholder="https://..."
+                onChange={(e) => setForm((p) => ({ ...p, logo: e.target.value }))}
               />
             </label>
             <label>

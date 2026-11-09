@@ -65,9 +65,8 @@ router.put(
         };
 
         const settingsPatch = body.settings || {};
-        const brandingPatch = body.branding || {};
 
-        // Flat legacy fields map into company.settings / branding
+        // Operational settings only — name/logo/colors are Platform-managed
         if (body.currency != null) settingsPatch.currency = body.currency;
         if (body.taxRate != null) settingsPatch.taxRate = body.taxRate;
         if (body.taxEnabled != null) settingsPatch.taxEnabled = body.taxEnabled;
@@ -80,16 +79,11 @@ router.put(
         if (body.theme != null) settingsPatch.theme = body.theme;
         if (body.timezone != null) settingsPatch.timezone = body.timezone;
 
-        if (body.pharmacyName != null) brandingPatch.pharmacyName = body.pharmacyName;
-        if (body.logo != null) brandingPatch.logo = body.logo;
-
         company.settings = { ...(company.settings?.toObject?.() || company.settings || {}), ...settingsPatch };
-        company.branding = { ...(company.branding?.toObject?.() || company.branding || {}), ...brandingPatch };
 
         if (body.address != null) company.address = body.address;
         if (body.phone != null) company.phone = body.phone;
         if (body.email != null) company.email = body.email;
-        if (brandingPatch.logo != null && !company.logo) company.logo = brandingPatch.logo;
 
         await company.save();
         req.company = company.toObject();

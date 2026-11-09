@@ -209,6 +209,14 @@ router.put(
     if (req.body.branding && typeof req.body.branding === "object") {
       company.branding = { ...company.branding.toObject?.() || company.branding, ...req.body.branding };
       if (req.body.branding.pharmacyName) company.name = req.body.branding.pharmacyName;
+      if (req.body.branding.logo !== undefined) company.logo = req.body.branding.logo;
+    }
+    if (req.body.logo !== undefined) {
+      company.logo = req.body.logo;
+      company.branding = {
+        ...(company.branding?.toObject?.() || company.branding || {}),
+        logo: req.body.logo,
+      };
     }
 
     if (req.body.settings && typeof req.body.settings === "object") {
