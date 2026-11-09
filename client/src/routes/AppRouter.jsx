@@ -26,7 +26,10 @@ import AuditPage from "../modules/audit/AuditPage";
 import PlatformDashboard from "../modules/platform/PlatformDashboard";
 import PlatformCompaniesPage from "../modules/platform/PlatformCompaniesPage";
 import PlatformDomainsPage from "../modules/platform/PlatformDomainsPage";
-import PlatformPlaceholderPage from "../modules/platform/PlatformPlaceholderPage";
+import PlatformGlobalMenusPage from "../modules/platform/PlatformGlobalMenusPage";
+import PlatformPlansPage from "../modules/platform/PlatformPlansPage";
+import PlatformBillingPage from "../modules/platform/PlatformBillingPage";
+import PlatformUsersPage from "../modules/platform/PlatformUsersPage";
 
 function PlatformOnly({ children }) {
   const { isPlatformAdmin, loading } = useAuth();
@@ -42,11 +45,6 @@ function PharmacyOnly({ children }) {
   return children;
 }
 
-function TenantPathRedirect() {
-  // Dev helper: /t/:slug/* → same app routes (tenant resolved server-side by path/host)
-  return <Navigate to="/dashboard" replace />;
-}
-
 export default function AppRouter() {
   return (
     <ThemeProvider>
@@ -55,7 +53,7 @@ export default function AppRouter() {
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<LoginPage />} />
-              <Route path="/t/:slug/*" element={<TenantPathRedirect />} />
+              <Route path="/t/:slug/*" element={<Navigate to="/dashboard" replace />} />
 
               <Route element={<ProtectedRoute />}>
                 <Route
@@ -68,83 +66,10 @@ export default function AppRouter() {
                   <Route path="/platform" element={<PlatformDashboard />} />
                   <Route path="/platform/companies" element={<PlatformCompaniesPage />} />
                   <Route path="/platform/domains" element={<PlatformDomainsPage />} />
-                  <Route
-                    path="/platform/approvals"
-                    element={
-                      <PlatformPlaceholderPage
-                        title="Company Approvals"
-                        subtitle="Review and activate pending pharmacy registrations"
-                      />
-                    }
-                  />
-                  <Route
-                    path="/platform/branches"
-                    element={
-                      <PlatformPlaceholderPage
-                        title="Company Branches"
-                        subtitle="Cross-tenant branch overview for support and billing"
-                      />
-                    }
-                  />
-                  <Route
-                    path="/platform/activity"
-                    element={
-                      <PlatformPlaceholderPage
-                        title="Company Activity"
-                        subtitle="Platform-level activity feed across pharmacies"
-                      />
-                    }
-                  />
-                  <Route
-                    path="/platform/global-menus"
-                    element={
-                      <PlatformPlaceholderPage
-                        title="Global Menu Management"
-                        nextStep="Central menu catalog — tenants derive their menus from this catalog."
-                      />
-                    }
-                  />
-                  <Route
-                    path="/platform/modules"
-                    element={
-                      <PlatformPlaceholderPage
-                        title="Module Management"
-                        nextStep="Assign CORE / BUSINESS / ADVANCED modules per company."
-                      />
-                    }
-                  />
-                  <Route
-                    path="/platform/features"
-                    element={<PlatformPlaceholderPage title="Feature Management" />}
-                  />
-                  <Route
-                    path="/platform/plans"
-                    element={<PlatformPlaceholderPage title="Subscription Plans" />}
-                  />
-                  <Route
-                    path="/platform/billing"
-                    element={<PlatformPlaceholderPage title="Billing Management" />}
-                  />
-                  <Route
-                    path="/platform/users"
-                    element={<PlatformPlaceholderPage title="Platform Users" />}
-                  />
-                  <Route
-                    path="/platform/roles"
-                    element={<PlatformPlaceholderPage title="Platform Roles" />}
-                  />
-                  <Route
-                    path="/platform/permissions"
-                    element={<PlatformPlaceholderPage title="Platform Permissions" />}
-                  />
-                  <Route
-                    path="/platform/audit"
-                    element={<PlatformPlaceholderPage title="Platform Audit Logs" />}
-                  />
-                  <Route
-                    path="/platform/settings"
-                    element={<PlatformPlaceholderPage title="Platform Settings" />}
-                  />
+                  <Route path="/platform/global-menus" element={<PlatformGlobalMenusPage />} />
+                  <Route path="/platform/plans" element={<PlatformPlansPage />} />
+                  <Route path="/platform/billing" element={<PlatformBillingPage />} />
+                  <Route path="/platform/users" element={<PlatformUsersPage />} />
                 </Route>
 
                 <Route

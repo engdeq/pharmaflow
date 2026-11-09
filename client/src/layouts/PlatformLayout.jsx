@@ -1,26 +1,21 @@
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
-  Activity,
   Bell,
   Building2,
   ChevronDown,
   CreditCard,
-  FileCheck2,
   Globe2,
   LayoutDashboard,
   LogOut,
   Menu as MenuIcon,
   Moon,
-  Network,
-  Package,
   PanelLeftClose,
   PanelLeftOpen,
-  ScrollText,
-  Settings,
-  Shield,
+  Settings2,
   Sparkles,
   Sun,
   Users,
+  Wallet,
   X,
 } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -31,43 +26,27 @@ import "./PlatformLayout.css";
 const PLATFORM_NAV = [
   {
     section: "Overview",
-    items: [{ label: "Platform Dashboard", to: "/platform", icon: LayoutDashboard, end: true }],
+    items: [{ label: "Dashboard", to: "/platform", icon: LayoutDashboard, end: true }],
   },
   {
-    section: "Company Management",
+    section: "Companies",
     items: [
       { label: "Companies", to: "/platform/companies", icon: Building2 },
       { label: "Register Pharmacy", to: "/platform/companies?register=1", icon: Sparkles },
-      { label: "Company Approvals", to: "/platform/approvals", icon: FileCheck2 },
-      { label: "Company Domains", to: "/platform/domains", icon: Globe2 },
-      { label: "Company Branches", to: "/platform/branches", icon: Network },
-      { label: "Company Activity", to: "/platform/activity", icon: Activity },
+      { label: "Domains", to: "/platform/domains", icon: Globe2 },
     ],
   },
   {
-    section: "Platform Configuration",
+    section: "Configuration",
     items: [
-      { label: "Global Menu Management", to: "/platform/global-menus", icon: MenuIcon },
-      { label: "Module Management", to: "/platform/modules", icon: Package },
-      { label: "Feature Management", to: "/platform/features", icon: Sparkles },
+      { label: "Global Menus", to: "/platform/global-menus", icon: MenuIcon },
       { label: "Subscription Plans", to: "/platform/plans", icon: CreditCard },
-      { label: "Billing Management", to: "/platform/billing", icon: CreditCard },
+      { label: "Billing", to: "/platform/billing", icon: Wallet },
     ],
   },
   {
-    section: "Access Management",
-    items: [
-      { label: "Platform Users", to: "/platform/users", icon: Users },
-      { label: "Platform Roles", to: "/platform/roles", icon: Shield },
-      { label: "Platform Permissions", to: "/platform/permissions", icon: Shield },
-    ],
-  },
-  {
-    section: "System",
-    items: [
-      { label: "Platform Audit Logs", to: "/platform/audit", icon: ScrollText },
-      { label: "Platform Settings", to: "/platform/settings", icon: Settings },
-    ],
+    section: "Access",
+    items: [{ label: "Platform Users", to: "/platform/users", icon: Users }],
   },
 ];
 
@@ -132,7 +111,9 @@ export default function PlatformLayout() {
                         className={({ isActive }) => `medaxis-link${isActive ? " active" : ""}`}
                         onClick={() => setMobileOpen(false)}
                       >
-                        <Icon size={18} />
+                        <span className="medaxis-link-icon">
+                          <Icon size={17} />
+                        </span>
                         <span>{item.label}</span>
                       </NavLink>
                     </li>
@@ -142,6 +123,11 @@ export default function PlatformLayout() {
             </div>
           ))}
         </nav>
+
+        <div className="medaxis-sidebar-foot">
+          <Settings2 size={14} />
+          <span>Pharmacy SaaS Admin</span>
+        </div>
       </aside>
 
       <div className="medaxis-main">
@@ -166,7 +152,7 @@ export default function PlatformLayout() {
           </div>
 
           <div className="medaxis-topbar-right">
-            <span className="medaxis-chip">Pharmacy SaaS Administration</span>
+            <span className="medaxis-chip">Control Center</span>
             <button type="button" className="mx-icon" onClick={toggleTheme}>
               {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
             </button>
@@ -185,9 +171,6 @@ export default function PlatformLayout() {
               </button>
               {profileOpen ? (
                 <div className="medaxis-profile-menu">
-                  <button type="button" onClick={() => navigate("/platform/settings")}>
-                    <Settings size={16} /> Settings
-                  </button>
                   <button type="button" onClick={handleLogout}>
                     <LogOut size={16} /> Logout
                   </button>
