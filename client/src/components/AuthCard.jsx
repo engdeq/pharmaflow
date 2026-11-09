@@ -1,12 +1,35 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import {
+  Building2,
+  Cross,
+  Eye,
+  EyeOff,
+  Lock,
+  LogIn,
+  Package,
+  Pill,
+  ShoppingCart,
+  Syringe,
+  User,
+  Users,
+} from "lucide-react";
 import { loginUser, registerUser } from "../api/auth";
 import { detectTenantSlug } from "../utils/tenantHost";
 import "./AuthCard.css";
 
-const ANIMATION_MS = 1800;
-
 const emptyLogin = { companySlug: "", username: "", password: "" };
 const emptyRegister = { username: "", email: "", password: "" };
+
+const FEATURES = [
+  { label: "Capsules", Icon: Pill },
+  { label: "Tablets", Icon: Package },
+  { label: "Syrup", Icon: Syringe },
+  { label: "Injection", Icon: Syringe },
+  { label: "Vitamins", Icon: Pill },
+  { label: "Equipment", Icon: Package },
+  { label: "First Aid", Icon: Cross },
+  { label: "Creams", Icon: Package },
+];
 
 function resolveInitialSlug() {
   const fromHost = detectTenantSlug();
@@ -21,10 +44,25 @@ function resolveInitialSlug() {
   );
 }
 
+function BrandMark({ light = false }) {
+  return (
+    <div className={`mx-auth-brand${light ? " light" : ""}`}>
+      <div className="mx-auth-logo">
+        <Cross size={18} strokeWidth={2.5} />
+      </div>
+      <div>
+        <strong>MedAxis</strong>
+        <span>Pharmacy SaaS</span>
+      </div>
+    </div>
+  );
+}
+
 export default function AuthCard({ onLoginSuccess }) {
-  const lockedSlug = detectTenantSlug() || new URLSearchParams(window.location.search).get("pharmacy");
+  const lockedSlug =
+    detectTenantSlug() || new URLSearchParams(window.location.search).get("pharmacy");
   const [isRegister, setIsRegister] = useState(false);
-  const [isAnimating, setIsAnimating] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [loginForm, setLoginForm] = useState(() => ({
     ...emptyLogin,
     companySlug: resolveInitialSlug(),
@@ -34,34 +72,10 @@ export default function AuthCard({ onLoginSuccess }) {
   const [registerStatus, setRegisterStatus] = useState({ type: "", message: "" });
   const [loginLoading, setLoginLoading] = useState(false);
   const [registerLoading, setRegisterLoading] = useState(false);
-  const animationTimer = useRef(null);
-  const prefersReducedMotion = useRef(false);
 
   useEffect(() => {
-    prefersReducedMotion.current = window.matchMedia(
-      "(prefers-reduced-motion: reduce)"
-    ).matches;
-
-    return () => {
-      if (animationTimer.current) {
-        clearTimeout(animationTimer.current);
-      }
-    };
+    document.title = "MedAxis — Login";
   }, []);
-
-  const switchMode = (nextIsRegister) => {
-    if (isAnimating || nextIsRegister === isRegister) return;
-
-    setIsAnimating(true);
-    setIsRegister(nextIsRegister);
-    setLoginStatus({ type: "", message: "" });
-    setRegisterStatus({ type: "", message: "" });
-
-    const duration = prefersReducedMotion.current ? 0 : ANIMATION_MS;
-    animationTimer.current = setTimeout(() => {
-      setIsAnimating(false);
-    }, duration);
-  };
 
   const handleLoginChange = (event) => {
     const { name, value } = event.target;
@@ -75,28 +89,16 @@ export default function AuthCard({ onLoginSuccess }) {
 
   const handleLoginSubmit = async (event) => {
     event.preventDefault();
-    if (loginLoading || isAnimating) return;
-
+    if (loginLoading) return;
     setLoginLoading(true);
     setLoginStatus({ type: "", message: "" });
-
     try {
       const data = await loginUser(loginForm);
-      if (data.token) {
-        localStorage.setItem("pharmacy_token", data.token);
-      }
-      setLoginStatus({
-        type: "success",
-        message: data.message || "Login successful.",
-      });
-      if (onLoginSuccess) {
-        await onLoginSuccess(data);
-      }
+      if (data.token) localStorage.setItem("pharmacy_token", data.token);
+      setLoginStatus({ type: "success", message: data.message || "Login successful." });
+      if (onLoginSuccess) await onLoginSuccess(data);
     } catch (error) {
-      setLoginStatus({
-        type: "error",
-        message: error.message || "Login failed.",
-      });
+      setLoginStatus({ type: "error", message: error.message || "Login failed." });
     } finally {
       setLoginLoading(false);
     }
@@ -104,11 +106,9 @@ export default function AuthCard({ onLoginSuccess }) {
 
   const handleRegisterSubmit = async (event) => {
     event.preventDefault();
-    if (registerLoading || isAnimating) return;
-
+    if (registerLoading) return;
     setRegisterLoading(true);
     setRegisterStatus({ type: "", message: "" });
-
     try {
       const data = await registerUser(registerForm);
       setRegisterStatus({
@@ -117,218 +117,235 @@ export default function AuthCard({ onLoginSuccess }) {
       });
       setRegisterForm(emptyRegister);
     } catch (error) {
-      setRegisterStatus({
-        type: "error",
-        message: error.message || "Registration failed.",
-      });
+      setRegisterStatus({ type: "error", message: error.message || "Registration failed." });
     } finally {
       setRegisterLoading(false);
     }
   };
 
   return (
-    <div className="auth-page">
-      <div
-        className={`auth-card${isRegister ? " active" : ""}`}
-        aria-busy={isAnimating}
-      >
-        <div className="form-box login" aria-hidden={isRegister}>
-          <form onSubmit={handleLoginSubmit} noValidate>
-            <h1>Login</h1>
+    <div className="mx-auth-page">
+      <aside className="mx-auth-showcase" aria-hidden={false}>
+        <BrandMark light />
+        <div className="mx-auth-showcase-body">
+          <h1>
+            Complete <span>Pharmacy Management System</span>
+          </h1>
+          <p>
+            Manage medicines, sales, inventory, purchases, expiry and more in one powerful system.
+          </p>
 
-            <div className="input-box">
-              <input
-                type="text"
-                name="companySlug"
-                placeholder="Pharmacy Code (or platform)"
-                autoComplete="organization"
-                value={loginForm.companySlug}
-                onChange={handleLoginChange}
-                disabled={isAnimating || loginLoading || Boolean(lockedSlug)}
-                readOnly={Boolean(lockedSlug)}
-              />
-              <i className="bx bxs-buildings" aria-hidden="true" />
+          <div className="mx-auth-features">
+            {FEATURES.map(({ label, Icon }) => (
+              <div key={label} className="mx-auth-feature">
+                <Icon size={20} />
+                <span>{label}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="mx-auth-hero-art" aria-hidden="true">
+            <div className="mx-auth-orb" />
+            <div className="mx-auth-pill mx-auth-pill-a" />
+            <div className="mx-auth-pill mx-auth-pill-b" />
+            <div className="mx-auth-bag">
+              <ShoppingCart size={42} />
             </div>
-            {lockedSlug ? (
-              <p style={{ margin: "0 0 10px", fontSize: 13, color: "#6b7a99", textAlign: "center" }}>
-                Pharmacy link: <strong>{lockedSlug}</strong>
+          </div>
+        </div>
+
+        <div className="mx-auth-stats">
+          <div>
+            <Package size={16} />
+            <div>
+              <strong>3,240+</strong>
+              <span>Medicines</span>
+            </div>
+          </div>
+          <div>
+            <Users size={16} />
+            <div>
+              <strong>1,284+</strong>
+              <span>Customers</span>
+            </div>
+          </div>
+          <div>
+            <ShoppingCart size={16} />
+            <div>
+              <strong>428K+</strong>
+              <span>Total Sales</span>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <section className="mx-auth-panel">
+        <div className="mx-auth-panel-inner">
+          <BrandMark />
+
+          {!isRegister ? (
+            <form className="mx-auth-form" onSubmit={handleLoginSubmit} noValidate>
+              <h2>Login</h2>
+              <p className="mx-auth-sub">Access your pharmacy management system</p>
+
+              <label className="mx-auth-field">
+                <Building2 size={18} />
+                <input
+                  type="text"
+                  name="companySlug"
+                  placeholder="Pharmacy Code (or platform)"
+                  autoComplete="organization"
+                  value={loginForm.companySlug}
+                  onChange={handleLoginChange}
+                  disabled={loginLoading || Boolean(lockedSlug)}
+                  readOnly={Boolean(lockedSlug)}
+                />
+              </label>
+              {lockedSlug ? (
+                <p className="mx-auth-locked">
+                  Pharmacy link: <strong>{lockedSlug}</strong>
+                </p>
+              ) : null}
+
+              <label className="mx-auth-field">
+                <User size={18} />
+                <input
+                  type="text"
+                  name="username"
+                  placeholder="Username"
+                  autoComplete="username"
+                  value={loginForm.username}
+                  onChange={handleLoginChange}
+                  required
+                  disabled={loginLoading}
+                />
+              </label>
+
+              <label className="mx-auth-field">
+                <Lock size={18} />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  placeholder="Password"
+                  autoComplete="current-password"
+                  value={loginForm.password}
+                  onChange={handleLoginChange}
+                  required
+                  disabled={loginLoading}
+                />
+                <button
+                  type="button"
+                  className="mx-auth-eye"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </label>
+
+              <div className="mx-auth-forgot">
+                <a href="#forgot-password">Forgot Password?</a>
+              </div>
+
+              <p className={`mx-auth-status ${loginStatus.type}`} role="status" aria-live="polite">
+                {loginStatus.message}
               </p>
-            ) : null}
 
-            <div className="input-box">
-              <input
-                type="text"
-                name="username"
-                placeholder="Username"
-                autoComplete="username"
-                value={loginForm.username}
-                onChange={handleLoginChange}
-                required
-                disabled={isAnimating || loginLoading}
-              />
-              <i className="bx bxs-user" aria-hidden="true" />
-            </div>
+              <button type="submit" className="mx-auth-submit" disabled={loginLoading}>
+                <LogIn size={18} />
+                {loginLoading ? "Logging in..." : "Login"}
+              </button>
 
-            <div className="input-box">
-              <input
-                type="password"
-                name="password"
-                placeholder="Password"
-                autoComplete="current-password"
-                value={loginForm.password}
-                onChange={handleLoginChange}
-                required
-                disabled={isAnimating || loginLoading}
-              />
-              <i className="bx bxs-lock-alt" aria-hidden="true" />
-            </div>
+              <div className="mx-auth-divider">
+                <span>or login with social platforms</span>
+              </div>
+              <div className="mx-auth-social">
+                <a href="#google" aria-label="Google">
+                  <i className="bx bxl-google" />
+                </a>
+                <a href="#facebook" aria-label="Facebook">
+                  <i className="bx bxl-facebook" />
+                </a>
+                <a href="#github" aria-label="GitHub">
+                  <i className="bx bxl-github" />
+                </a>
+                <a href="#linkedin" aria-label="LinkedIn">
+                  <i className="bx bxl-linkedin" />
+                </a>
+              </div>
 
-            <div className="forgot-link">
-              <a href="#forgot-password">Forgot Password?</a>
-            </div>
+              <p className="mx-auth-switch">
+                Don&apos;t have an account?{" "}
+                <button type="button" onClick={() => setIsRegister(true)}>
+                  Register
+                </button>
+              </p>
+            </form>
+          ) : (
+            <form className="mx-auth-form" onSubmit={handleRegisterSubmit} noValidate>
+              <h2>Register</h2>
+              <p className="mx-auth-sub">Create an account request for your pharmacy</p>
 
-            <p
-              className={`form-status ${loginStatus.type}`}
-              role="status"
-              aria-live="polite"
-            >
-              {loginStatus.message}
-            </p>
+              <label className="mx-auth-field">
+                <User size={18} />
+                <input
+                  type="text"
+                  name="username"
+                  placeholder="Username"
+                  autoComplete="username"
+                  value={registerForm.username}
+                  onChange={handleRegisterChange}
+                  required
+                  disabled={registerLoading}
+                />
+              </label>
 
-            <button
-              type="submit"
-              className="auth-btn"
-              disabled={isAnimating || loginLoading}
-            >
-              {loginLoading ? "Logging in..." : "Login"}
-            </button>
+              <label className="mx-auth-field">
+                <Building2 size={18} />
+                <input
+                  type="email"
+                  name="email"
+                  placeholder="Email"
+                  autoComplete="email"
+                  value={registerForm.email}
+                  onChange={handleRegisterChange}
+                  required
+                  disabled={registerLoading}
+                />
+              </label>
 
-            <p>or login with social platforms</p>
-            <div className="social-icons">
-              <a href="#google" aria-label="Login with Google">
-                <i className="bx bxl-google" aria-hidden="true" />
-              </a>
-              <a href="#facebook" aria-label="Login with Facebook">
-                <i className="bx bxl-facebook" aria-hidden="true" />
-              </a>
-              <a href="#github" aria-label="Login with GitHub">
-                <i className="bx bxl-github" aria-hidden="true" />
-              </a>
-              <a href="#linkedin" aria-label="Login with LinkedIn">
-                <i className="bx bxl-linkedin" aria-hidden="true" />
-              </a>
-            </div>
-          </form>
+              <label className="mx-auth-field">
+                <Lock size={18} />
+                <input
+                  type="password"
+                  name="password"
+                  placeholder="Password"
+                  autoComplete="new-password"
+                  value={registerForm.password}
+                  onChange={handleRegisterChange}
+                  required
+                  disabled={registerLoading}
+                />
+              </label>
+
+              <p className={`mx-auth-status ${registerStatus.type}`} role="status" aria-live="polite">
+                {registerStatus.message}
+              </p>
+
+              <button type="submit" className="mx-auth-submit" disabled={registerLoading}>
+                {registerLoading ? "Registering..." : "Register"}
+              </button>
+
+              <p className="mx-auth-switch">
+                Already have an account?{" "}
+                <button type="button" onClick={() => setIsRegister(false)}>
+                  Login
+                </button>
+              </p>
+            </form>
+          )}
         </div>
-
-        <div className="form-box register" aria-hidden={!isRegister}>
-          <form onSubmit={handleRegisterSubmit} noValidate>
-            <h1>Registration</h1>
-
-            <div className="input-box">
-              <input
-                type="text"
-                name="username"
-                placeholder="Username"
-                autoComplete="username"
-                value={registerForm.username}
-                onChange={handleRegisterChange}
-                required
-                disabled={isAnimating || registerLoading}
-              />
-              <i className="bx bxs-user" aria-hidden="true" />
-            </div>
-
-            <div className="input-box">
-              <input
-                type="email"
-                name="email"
-                placeholder="Email"
-                autoComplete="email"
-                value={registerForm.email}
-                onChange={handleRegisterChange}
-                required
-                disabled={isAnimating || registerLoading}
-              />
-              <i className="bx bxs-envelope" aria-hidden="true" />
-            </div>
-
-            <div className="input-box">
-              <input
-                type="password"
-                name="password"
-                placeholder="Password"
-                autoComplete="new-password"
-                value={registerForm.password}
-                onChange={handleRegisterChange}
-                required
-                disabled={isAnimating || registerLoading}
-              />
-              <i className="bx bxs-lock-alt" aria-hidden="true" />
-            </div>
-
-            <p
-              className={`form-status ${registerStatus.type}`}
-              role="status"
-              aria-live="polite"
-            >
-              {registerStatus.message}
-            </p>
-
-            <button
-              type="submit"
-              className="auth-btn"
-              disabled={isAnimating || registerLoading}
-            >
-              {registerLoading ? "Registering..." : "Register"}
-            </button>
-
-            <p>or register with social platforms</p>
-            <div className="social-icons">
-              <a href="#google" aria-label="Register with Google">
-                <i className="bx bxl-google" aria-hidden="true" />
-              </a>
-              <a href="#facebook" aria-label="Register with Facebook">
-                <i className="bx bxl-facebook" aria-hidden="true" />
-              </a>
-              <a href="#github" aria-label="Register with GitHub">
-                <i className="bx bxl-github" aria-hidden="true" />
-              </a>
-              <a href="#linkedin" aria-label="Register with LinkedIn">
-                <i className="bx bxl-linkedin" aria-hidden="true" />
-              </a>
-            </div>
-          </form>
-        </div>
-
-        <div className="toggle-box" aria-hidden="true">
-          <div className="toggle-panel toggle-left">
-            <h1>Hello, Welcome!</h1>
-            <p>Don&apos;t have an account?</p>
-            <button
-              type="button"
-              className="auth-btn"
-              onClick={() => switchMode(true)}
-              disabled={isAnimating}
-            >
-              Register
-            </button>
-          </div>
-
-          <div className="toggle-panel toggle-right">
-            <h1>Welcome Back!</h1>
-            <p>Already have an account?</p>
-            <button
-              type="button"
-              className="auth-btn"
-              onClick={() => switchMode(false)}
-              disabled={isAnimating}
-            >
-              Login
-            </button>
-          </div>
-        </div>
-      </div>
+      </section>
     </div>
   );
 }
