@@ -153,30 +153,71 @@ async function provisionCompany({
   company.ownerUserId = owner._id;
   await company.save();
 
-  // Register default subdomain mapping (not live until DNS + SSL verified)
-  try {
-    const CompanyDomain = require("../models/CompanyDomain");
-    const base = String(process.env.MEDAXIS_BASE_DOMAIN || "medaxis.dirshay.com").toLowerCase();
-    const hostname = `${company.slug}.${base}`;
-    await CompanyDomain.findOneAndUpdate(
-      { hostname },
-      {
-        companyId: company._id,
-        tenantId: company._id,
-        hostname,
-        type: "subdomain",
-        isPrimary: true,
-        status: "pending",
-        sslStatus: "none",
-        notes: "Auto-created on pharmacy registration. Activate after DNS/SSL.",
-      },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
-    );
-  } catch (err) {
-    console.warn("Domain registration skipped:", err.message);
-  }
+  const domain = await ensureCompanyDomain(company);
 
-  return { company, branch, owner };
+  return { company, branch, owner, domain, liveUrl: livePharmacyUrl(company.slug) };
+}
+
+function baseDomain() {
+  return String(process.env.MEDAXIS_BASE_DOMAIN || "medaxis.dirshay.com").toLowerCase();
+}
+
+function livePharmacyUrl(slug) {
+  return `https://${baseDomain()}/t/${String(slug || "").toLowerCase()}`;
+}
+
+function subdomainHost(slug) {
+  return `${String(slug || "").toLowerCase()}.${baseDomain()}`;
+}
+
+/**
+ * Every pharmacy gets an automatic domain record.
+ * Path link /t/{slug} is live immediately (same SSL as main site).
+ * Subdomain stays pending until DNS + SSL are verified.
+ */
+async function ensureCompanyDomain(company) {
+  const CompanyDomain = require("../models/CompanyDomain");
+  const hostname = subdomainHost(company.slug);
+  const liveUrl = livePharmacyUrl(company.slug);
+
+  await CompanyDomain.updateMany(
+    { companyId: company._id, hostname: { $ne: hostname } },
+    { $set: { isPrimary: false } }
+  );
+
+  const domain = await CompanyDomain.findOneAndUpdate(
+    { hostname },
+    {
+      companyId: company._id,
+      tenantId: company._id,
+      hostname,
+      type: "subdomain",
+      isPrimary: true,
+      status: company.status === "active" ? "active" : "pending",
+      pathLive: true,
+      sslStatus: "none",
+      notes: `Live now: ${liveUrl} | Subdomain pending DNS/SSL: ${hostname}`,
+    },
+    { upsert: true, new: true, setDefaultsOnInsert: true }
+  );
+
+  return domain;
+}
+
+async function backfillCompanyDomains() {
+  const Company = require("../models/Company");
+  const companies = await Company.find({}).select("_id name slug status");
+  const results = [];
+  for (const company of companies) {
+    const domain = await ensureCompanyDomain(company);
+    results.push({
+      companyId: company._id,
+      slug: company.slug,
+      hostname: domain.hostname,
+      liveUrl: livePharmacyUrl(company.slug),
+    });
+  }
+  return results;
 }
 
 module.exports = {
@@ -185,4 +226,9 @@ module.exports = {
   uniqueSlug,
   buildSubscription,
   provisionCompany,
+  ensureCompanyDomain,
+  backfillCompanyDomains,
+  livePharmacyUrl,
+  subdomainHost,
+  baseDomain,
 };

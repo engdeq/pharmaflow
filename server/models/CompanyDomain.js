@@ -40,6 +40,8 @@ const companyDomainSchema = new mongoose.Schema(
       enum: ["none", "pending", "active", "failed"],
       default: "none",
     },
+    /** Path-based login is always available: https://medaxis.../t/{slug} */
+    pathLive: { type: Boolean, default: true },
     notes: { type: String, default: "" },
   },
   { timestamps: true }

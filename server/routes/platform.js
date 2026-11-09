@@ -16,6 +16,9 @@ const {
   buildSubscription,
   uniqueSlug,
   PLAN_LIMITS,
+  backfillCompanyDomains,
+  livePharmacyUrl,
+  ensureCompanyDomain,
 } = require("../services/companyService");
 const {
   ensureDefaultPlans,
@@ -158,7 +161,6 @@ router.post(
           tagline,
           primaryColor,
           secondaryColor,
-          branding,
           branding: branding || {},
         },
         ownerInput: {
@@ -183,6 +185,7 @@ router.post(
           slug: result.company.slug,
           owner: result.owner.username,
           plan: result.company.subscription?.plan,
+          liveUrl: result.liveUrl,
         },
         ipAddress: req.ip,
       });
@@ -196,12 +199,16 @@ router.post(
             username: result.owner.username,
             email: result.owner.email,
           },
+          domain: result.domain,
+          liveUrl: result.liveUrl,
           loginHint: {
             companySlug: result.company.slug,
             username: result.owner.username,
+            liveUrl: result.liveUrl,
+            openNow: true,
           },
         },
-        "Pharmacy company registered.",
+        "Pharmacy registered — live link ready.",
         201
       );
     } catch (err) {
@@ -272,6 +279,7 @@ router.put(
     }
 
     await company.save();
+    await ensureCompanyDomain(company);
     await writeAudit({
       user: req.user,
       action: "update",
@@ -279,7 +287,7 @@ router.put(
       description: `Updated pharmacy ${company.name}`,
       ipAddress: req.ip,
     });
-    return ok(res, company, "Company updated.");
+    return ok(res, { company, liveUrl: livePharmacyUrl(company.slug) }, "Company updated.");
   })
 );
 
@@ -310,6 +318,7 @@ router.put(
       if (company.subscription) company.subscription.status = "suspended";
     }
     await company.save();
+    await ensureCompanyDomain(company);
     await writeAudit({
       user: req.user,
       action: "update_status",
@@ -333,11 +342,26 @@ router.get(
 router.get(
   "/domains",
   asyncHandler(async (_req, res) => {
+    // Ensure every company has a domain row (automatic)
+    await backfillCompanyDomains();
     const domains = await CompanyDomain.find()
       .populate("companyId", "name slug status")
       .sort({ createdAt: -1 })
       .lean();
-    return ok(res, domains);
+    const enriched = domains.map((d) => ({
+      ...d,
+      liveUrl: livePharmacyUrl(d.companyId?.slug),
+      pathLive: d.pathLive !== false,
+    }));
+    return ok(res, enriched);
+  })
+);
+
+router.post(
+  "/domains/sync",
+  asyncHandler(async (_req, res) => {
+    const results = await backfillCompanyDomains();
+    return ok(res, results, `Synced ${results.length} company domains.`);
   })
 );
 

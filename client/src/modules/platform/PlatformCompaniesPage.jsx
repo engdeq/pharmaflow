@@ -151,10 +151,22 @@ export default function PlatformCompaniesPage() {
             logo: form.logo,
             branding: brandingPayload,
           },
-          successMessage: "Pharmacy registered",
+          successMessage: "Pharmacy registered — link ready",
         });
-        setCreatedHint(res.data?.loginHint || null);
-        if (!res.data?.loginHint) setOpen(false);
+        const hint = {
+          ...(res.data?.loginHint || {}),
+          liveUrl:
+            res.data?.liveUrl ||
+            res.data?.loginHint?.liveUrl ||
+            (res.data?.company?.slug
+              ? `https://medaxis.dirshay.com/t/${res.data.company.slug}`
+              : ""),
+        };
+        setCreatedHint(hint.companySlug ? hint : null);
+        if (hint.liveUrl) {
+          window.open(hint.liveUrl, "_blank", "noopener,noreferrer");
+        }
+        if (!hint.companySlug) setOpen(false);
       }
       load();
       if (editing) setOpen(false);
@@ -270,8 +282,8 @@ export default function PlatformCompaniesPage() {
         }
       >
         {createdHint ? (
-          <div className="step-box" style={{ display: "grid", gap: 8 }}>
-            <strong>Pharmacy ready — give these to the owner:</strong>
+          <div className="step-box" style={{ display: "grid", gap: 10 }}>
+            <strong>Pharmacy waa diyaar — link-ku si automatic ah ayuu u shaqeeyaa</strong>
             <div>
               Pharmacy Code: <code>{createdHint.companySlug}</code>
             </div>
@@ -280,17 +292,21 @@ export default function PlatformCompaniesPage() {
             </div>
             <div>
               Live link:{" "}
-              <a
-                href={`https://medaxis.dirshay.com/t/${createdHint.companySlug}`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                https://medaxis.dirshay.com/t/{createdHint.companySlug}
+              <a href={createdHint.liveUrl} target="_blank" rel="noreferrer">
+                {createdHint.liveUrl}
               </a>
             </div>
+            <a
+              className="btn btn-primary"
+              href={createdHint.liveUrl}
+              target="_blank"
+              rel="noreferrer"
+              style={{ textDecoration: "none", textAlign: "center" }}
+            >
+              Fur Pharmacy Login
+            </a>
             <p style={{ color: "var(--muted)", margin: 0 }}>
-              Fur link-gaas → username + password. Subdomain{" "}
-              <code>{createdHint.companySlug}.medaxis.dirshay.com</code> wuxuu u baahan yahay DNS wildcard.
+              Markasta pharmacy cusub la sameeyo, link-gan `/t/{slug}` ayaa isla markiiba shaqeeya.
             </p>
           </div>
         ) : (

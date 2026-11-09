@@ -160,22 +160,20 @@ export default function PlatformDomainsPage() {
                       <td>
                         <div style={{ display: "grid", gap: 4 }}>
                           <a
-                            href={pharmacyLiveUrl(d.companyId?.slug)}
+                            href={d.liveUrl || pharmacyLiveUrl(d.companyId?.slug)}
                             target="_blank"
                             rel="noreferrer"
                             style={{ fontWeight: 600 }}
                           >
-                            Open pharmacy login
+                            {d.liveUrl || pharmacyLiveUrl(d.companyId?.slug)}
                           </a>
+                          <span style={{ fontSize: 12, color: "#22c55e" }}>
+                            Path live (automatic)
+                          </span>
                           <code style={{ fontSize: 12 }}>{d.hostname}</code>
-                          <a
-                            href={pharmacySubdomainUrl(d.companyId?.slug)}
-                            target="_blank"
-                            rel="noreferrer"
-                            style={{ fontSize: 12, color: "var(--muted)" }}
-                          >
-                            {pharmacySubdomainUrl(d.companyId?.slug)}
-                          </a>
+                          <span style={{ fontSize: 12, color: "var(--muted)" }}>
+                            Subdomain: {pharmacySubdomainUrl(d.companyId?.slug)} (DNS required)
+                          </span>
                         </div>
                       </td>
                       <td>{d.type}</td>
@@ -189,7 +187,7 @@ export default function PlatformDomainsPage() {
                       <td style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                         <a
                           className="btn btn-primary"
-                          href={pharmacyLiveUrl(d.companyId?.slug)}
+                          href={d.liveUrl || pharmacyLiveUrl(d.companyId?.slug)}
                           target="_blank"
                           rel="noreferrer"
                           style={{ textDecoration: "none" }}
