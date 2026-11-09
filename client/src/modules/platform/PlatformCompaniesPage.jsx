@@ -230,7 +230,16 @@ export default function PlatformCompaniesPage() {
                         onChange={(on) => setStatus(c, on ? "active" : "suspended")}
                       />
                     </td>
-                    <td>
+                    <td style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      <a
+                        className="btn btn-primary"
+                        href={`https://medaxis.dirshay.com/t/${c.slug}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{ textDecoration: "none" }}
+                      >
+                        Open
+                      </a>
                       <button type="button" className="btn btn-ghost" onClick={() => openEdit(c)}>
                         Edit
                       </button>
@@ -269,8 +278,19 @@ export default function PlatformCompaniesPage() {
             <div>
               Username: <code>{createdHint.username}</code>
             </div>
+            <div>
+              Live link:{" "}
+              <a
+                href={`https://medaxis.dirshay.com/t/${createdHint.companySlug}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                https://medaxis.dirshay.com/t/{createdHint.companySlug}
+              </a>
+            </div>
             <p style={{ color: "var(--muted)", margin: 0 }}>
-              Login page: geli Pharmacy Code + Username + Password. Ka dib owner-ku wuxuu Users ka sameyn karaa.
+              Fur link-gaas → username + password. Subdomain{" "}
+              <code>{createdHint.companySlug}.medaxis.dirshay.com</code> wuxuu u baahan yahay DNS wildcard.
             </p>
           </div>
         ) : (

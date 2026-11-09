@@ -4,6 +4,7 @@ import Modal from "../../components/ui/Modal";
 import Skeleton from "../../components/ui/Skeleton";
 import { api } from "../../services/api";
 import { useToast } from "../../contexts/ToastContext";
+import { pharmacyLiveUrl, pharmacySubdomainUrl } from "../../utils/tenantHost";
 
 const BASE = "medaxis.dirshay.com";
 
@@ -157,7 +158,25 @@ export default function PlatformDomainsPage() {
                         <div style={{ color: "var(--muted)", fontSize: 12 }}>{d.companyId?.slug}</div>
                       </td>
                       <td>
-                        <code>{d.hostname}</code>
+                        <div style={{ display: "grid", gap: 4 }}>
+                          <a
+                            href={pharmacyLiveUrl(d.companyId?.slug)}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={{ fontWeight: 600 }}
+                          >
+                            Open pharmacy login
+                          </a>
+                          <code style={{ fontSize: 12 }}>{d.hostname}</code>
+                          <a
+                            href={pharmacySubdomainUrl(d.companyId?.slug)}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={{ fontSize: 12, color: "var(--muted)" }}
+                          >
+                            {pharmacySubdomainUrl(d.companyId?.slug)}
+                          </a>
+                        </div>
                       </td>
                       <td>{d.type}</td>
                       <td>{d.isPrimary ? "Yes" : "No"}</td>
@@ -168,6 +187,15 @@ export default function PlatformDomainsPage() {
                       </td>
                       <td>{d.sslStatus}</td>
                       <td style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                        <a
+                          className="btn btn-primary"
+                          href={pharmacyLiveUrl(d.companyId?.slug)}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{ textDecoration: "none" }}
+                        >
+                          Open
+                        </a>
                         {d.status !== "active" ? (
                           <button type="button" className="btn btn-ghost" onClick={() => setStatus(d, "active")}>
                             Activate

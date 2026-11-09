@@ -12,6 +12,7 @@ const asyncHandler = require("../utils/asyncHandler");
 const { writeAudit } = require("../services/auditService");
 
 const router = express.Router();
+const { resolveTenantFromRequest } = require("../services/tenantResolver");
 
 function getToken(user) {
   return jwt.sign(
@@ -76,7 +77,16 @@ router.post(
     const Company = require("../models/Company");
     let user = null;
 
-    const slug = String(companySlug || "").trim().toLowerCase();
+    // Prefer explicit slug, else resolve from hostname /t/:slug (never trust tenantId body)
+    let slug = String(companySlug || "").trim().toLowerCase();
+    if (!slug) {
+      try {
+        const hostCtx = await resolveTenantFromRequest(req);
+        if (hostCtx?.slug) slug = hostCtx.slug;
+      } catch {
+        /* ignore */
+      }
+    }
 
     // Platform operator login (no pharmacy code)
     if (!slug || slug === "platform") {
@@ -163,6 +173,45 @@ router.post(
         isPlatformAdmin: Boolean(user.isPlatformAdmin),
         tenantId: user.tenantId || null,
       },
+    });
+  })
+);
+
+/** Public: resolve pharmacy branding/slug from hostname or ?slug= / path hint */
+router.get(
+  "/tenant-context",
+  asyncHandler(async (req, res) => {
+    const Company = require("../models/Company");
+    const querySlug = String(req.query.slug || "").trim().toLowerCase();
+    let company = null;
+
+    if (querySlug) {
+      company = await Company.findOne({ slug: querySlug }).lean();
+    } else {
+      const hostCtx = await resolveTenantFromRequest(req);
+      if (hostCtx?.company) company = hostCtx.company;
+    }
+
+    if (!company) {
+      return ok(res, {
+        mode: "platform",
+        slug: null,
+        name: "MedAxis",
+        logo: "",
+        branding: null,
+        loginUrl: "/platform",
+      });
+    }
+
+    return ok(res, {
+      mode: "pharmacy",
+      slug: company.slug,
+      name: company.name,
+      status: company.status,
+      logo: company.logo || company.branding?.logo || "",
+      branding: company.branding || {},
+      livePath: `/t/${company.slug}`,
+      subdomain: `${company.slug}.${process.env.MEDAXIS_BASE_DOMAIN || "medaxis.dirshay.com"}`,
     });
   })
 );

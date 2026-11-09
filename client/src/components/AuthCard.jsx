@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { loginUser, registerUser } from "../api/auth";
+import { detectTenantSlug } from "../utils/tenantHost";
 import "./AuthCard.css";
 
 const ANIMATION_MS = 1800;
@@ -7,10 +8,27 @@ const ANIMATION_MS = 1800;
 const emptyLogin = { companySlug: "", username: "", password: "" };
 const emptyRegister = { username: "", email: "", password: "" };
 
+function resolveInitialSlug() {
+  const fromHost = detectTenantSlug();
+  if (fromHost) return fromHost;
+  const params = new URLSearchParams(window.location.search);
+  const fromQuery = params.get("pharmacy") || params.get("slug");
+  if (fromQuery) return String(fromQuery).toLowerCase();
+  return (
+    sessionStorage.getItem("medaxis_tenant_slug") ||
+    localStorage.getItem("medaxis_tenant_slug") ||
+    ""
+  );
+}
+
 export default function AuthCard({ onLoginSuccess }) {
+  const lockedSlug = detectTenantSlug() || new URLSearchParams(window.location.search).get("pharmacy");
   const [isRegister, setIsRegister] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
-  const [loginForm, setLoginForm] = useState(emptyLogin);
+  const [loginForm, setLoginForm] = useState(() => ({
+    ...emptyLogin,
+    companySlug: resolveInitialSlug(),
+  }));
   const [registerForm, setRegisterForm] = useState(emptyRegister);
   const [loginStatus, setLoginStatus] = useState({ type: "", message: "" });
   const [registerStatus, setRegisterStatus] = useState({ type: "", message: "" });
@@ -126,10 +144,16 @@ export default function AuthCard({ onLoginSuccess }) {
                 autoComplete="organization"
                 value={loginForm.companySlug}
                 onChange={handleLoginChange}
-                disabled={isAnimating || loginLoading}
+                disabled={isAnimating || loginLoading || Boolean(lockedSlug)}
+                readOnly={Boolean(lockedSlug)}
               />
               <i className="bx bxs-buildings" aria-hidden="true" />
             </div>
+            {lockedSlug ? (
+              <p style={{ margin: "0 0 10px", fontSize: 13, color: "#6b7a99", textAlign: "center" }}>
+                Pharmacy link: <strong>{lockedSlug}</strong>
+              </p>
+            ) : null}
 
             <div className="input-box">
               <input

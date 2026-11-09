@@ -30,6 +30,7 @@ import PlatformGlobalMenusPage from "../modules/platform/PlatformGlobalMenusPage
 import PlatformPlansPage from "../modules/platform/PlatformPlansPage";
 import PlatformBillingPage from "../modules/platform/PlatformBillingPage";
 import PlatformUsersPage from "../modules/platform/PlatformUsersPage";
+import TenantEntry from "./TenantEntry";
 
 function PlatformOnly({ children }) {
   const { isPlatformAdmin, loading } = useAuth();
@@ -53,7 +54,8 @@ export default function AppRouter() {
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<LoginPage />} />
-              <Route path="/t/:slug/*" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/t/:slug" element={<TenantEntry />} />
+              <Route path="/t/:slug/*" element={<TenantEntry />} />
 
               <Route element={<ProtectedRoute />}>
                 <Route
