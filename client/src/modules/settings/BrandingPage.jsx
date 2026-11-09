@@ -5,16 +5,6 @@ import { api } from "../../services/api";
 import { useToast } from "../../contexts/ToastContext";
 import { useAuth } from "../../contexts/AuthContext";
 
-const COLOR_FIELDS = [
-  ["primaryColor", "Primary Color"],
-  ["secondaryColor", "Secondary Color"],
-  ["sidebarColor", "Sidebar Color"],
-  ["sidebarActiveColor", "Sidebar Active"],
-  ["headerColor", "Header Color"],
-  ["buttonColor", "Button Color"],
-  ["backgroundColor", "Background Color"],
-];
-
 export default function BrandingPage() {
   const toast = useToast();
   const { loadSession } = useAuth();
@@ -25,15 +15,7 @@ export default function BrandingPage() {
     logo: "",
     branding: {
       pharmacyName: "",
-      tagline: "",
       logo: "",
-      primaryColor: "#748CF8",
-      secondaryColor: "#5A6FD8",
-      sidebarColor: "#FFFFFF",
-      sidebarActiveColor: "#748CF8",
-      headerColor: "#FFFFFF",
-      buttonColor: "#748CF8",
-      backgroundColor: "#F5F7FB",
     },
   });
 
@@ -80,7 +62,7 @@ export default function BrandingPage() {
     <div>
       <PageHeader
         title="Branding"
-        subtitle="Magaca, logo iyo midabada systemkaaga — kaliya shirkaddaada"
+        subtitle="Magaca iyo logo — midabada waxaa maamula Platform (color template)"
         actions={
           <button type="button" className="btn btn-primary" onClick={save}>
             Save Branding
@@ -107,15 +89,6 @@ export default function BrandingPage() {
             Pharmacy Code (login / subdomain)
             <input value={form.slug} disabled />
           </label>
-          <label>
-            Tagline
-            <input
-              value={form.branding.tagline || ""}
-              onChange={(e) =>
-                setForm((p) => ({ ...p, branding: { ...p.branding, tagline: e.target.value } }))
-              }
-            />
-          </label>
           <label style={{ gridColumn: "1 / -1" }}>
             Logo URL
             <input
@@ -130,30 +103,6 @@ export default function BrandingPage() {
               }
             />
           </label>
-        </div>
-
-        <h3 style={{ margin: 0 }}>Colors</h3>
-        <div className="form-grid">
-          {COLOR_FIELDS.map(([key, label]) => (
-            <label key={key}>
-              {label}
-              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                <input
-                  type="color"
-                  value={form.branding[key] || "#748CF8"}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, branding: { ...p.branding, [key]: e.target.value } }))
-                  }
-                />
-                <input
-                  value={form.branding[key] || ""}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, branding: { ...p.branding, [key]: e.target.value } }))
-                  }
-                />
-              </div>
-            </label>
-          ))}
         </div>
 
         {(form.logo || form.branding.logo) && (

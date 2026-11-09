@@ -42,10 +42,13 @@ router.put(
     if (req.body.name) company.name = req.body.name;
     if (req.body.logo !== undefined) company.logo = req.body.logo;
 
+    // Pharmacy can update name/logo only; color template is managed by Platform
     if (req.body.branding && typeof req.body.branding === "object") {
+      const current = company.branding?.toObject?.() || company.branding || {};
       company.branding = {
-        ...(company.branding?.toObject?.() || company.branding || {}),
-        ...req.body.branding,
+        ...current,
+        pharmacyName: req.body.branding.pharmacyName || req.body.name || current.pharmacyName,
+        logo: req.body.branding.logo !== undefined ? req.body.branding.logo : current.logo,
       };
       if (req.body.branding.pharmacyName) {
         company.name = req.body.branding.pharmacyName;

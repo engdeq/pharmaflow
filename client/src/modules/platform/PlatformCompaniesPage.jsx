@@ -7,8 +7,6 @@ import { api } from "../../services/api";
 import { useToast } from "../../contexts/ToastContext";
 
 const DEFAULT_BRANDING = {
-  logo: "",
-  tagline: "",
   primaryColor: "#748CF8",
   secondaryColor: "#5A6FD8",
   sidebarColor: "#FFFFFF",
@@ -92,7 +90,7 @@ export default function PlatformCompaniesPage() {
       city: c.city || "",
       country: c.country || "",
       plan: c.subscription?.plan || "trial",
-      branding: { ...DEFAULT_BRANDING, ...(c.branding || {}), logo: c.logo || c.branding?.logo || "" },
+      branding: { ...DEFAULT_BRANDING, ...(c.branding || {}) },
     });
     setOpen(true);
   };
@@ -120,7 +118,6 @@ export default function PlatformCompaniesPage() {
             city: form.city,
             country: form.country,
             plan: form.plan,
-            logo: form.branding.logo,
             branding: brandingPayload,
           },
           successMessage: "Company updated",
@@ -131,8 +128,6 @@ export default function PlatformCompaniesPage() {
           method: "POST",
           body: {
             ...form,
-            logo: form.branding.logo,
-            tagline: form.branding.tagline,
             branding: brandingPayload,
           },
           successMessage: "Pharmacy registered",
@@ -306,20 +301,8 @@ export default function PlatformCompaniesPage() {
             </label>
 
             <div style={{ gridColumn: "1 / -1", fontWeight: 700, marginTop: 8 }}>
-              Branding Template (colors / logo)
+              Color Template
             </div>
-            <label>
-              Tagline
-              <input value={form.branding.tagline || ""} onChange={(e) => setBrand("tagline", e.target.value)} />
-            </label>
-            <label>
-              Logo URL
-              <input
-                value={form.branding.logo || ""}
-                placeholder="https://..."
-                onChange={(e) => setBrand("logo", e.target.value)}
-              />
-            </label>
             {COLOR_FIELDS.map(([key, label]) => (
               <label key={key}>
                 {label}
