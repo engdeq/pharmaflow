@@ -1,20 +1,23 @@
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
+
 .medaxis-shell {
-  --mx-primary: #315ff4;
-  --mx-primary-soft: #e8eeff;
-  --mx-primary-dark: #1f3fd1;
+  --mx-primary: #2864f5;
+  --mx-sidebar-bg: #101a32;
+  --mx-sidebar-end: #091329;
+  --mx-text-primary: #f8fafc;
+  --mx-text-secondary: #a8b5ce;
+  --mx-divider: rgba(255, 255, 255, 0.1);
+  --mx-success: #16c784;
   --mx-bg: #f4f7fc;
   --mx-card: #ffffff;
   --mx-text: #17243b;
   --mx-muted: #6b7a99;
   --mx-border: #dde5f5;
-  --mx-sidebar: #0b1730;
-  --mx-glow: rgba(49, 95, 244, 0.45);
+  font-family: "Plus Jakarta Sans", Inter, system-ui, sans-serif;
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 268px 1fr;
-  background:
-    radial-gradient(1200px 500px at 100% -10%, rgba(49, 95, 244, 0.08), transparent 60%),
-    var(--mx-bg);
+  grid-template-columns: 292px 1fr;
+  background: var(--mx-bg);
   color: var(--mx-text);
 }
 
@@ -23,103 +26,180 @@
 }
 
 .medaxis-sidebar {
-  background:
-    radial-gradient(500px 280px at 20% 0%, rgba(49, 95, 244, 0.28), transparent 55%),
-    linear-gradient(175deg, #121f3d 0%, #0b1730 48%, #091229 100%);
-  color: #c5d2ef;
-  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  background: linear-gradient(180deg, var(--mx-sidebar-bg) 0%, var(--mx-sidebar-end) 100%);
+  color: var(--mx-text-secondary);
+  border-right: 1px solid var(--mx-divider);
   display: flex;
   flex-direction: column;
   min-height: 100vh;
   position: sticky;
   top: 0;
   z-index: 30;
-  box-shadow: 8px 0 40px rgba(9, 18, 41, 0.18);
 }
 
 .medaxis-brand {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 22px 18px 18px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  padding: 20px 16px 16px;
+  border-bottom: 1px solid var(--mx-divider);
 }
 
 .medaxis-mark {
   width: 44px;
   height: 44px;
-  border-radius: 15px;
+  border-radius: 14px;
   display: grid;
   place-items: center;
   font-weight: 800;
   font-size: 18px;
   color: #fff;
-  background: linear-gradient(145deg, #4d74ff 0%, #315ff4 55%, #1f3fd1 100%);
-  box-shadow: 0 12px 28px var(--mx-glow);
+  background: linear-gradient(145deg, #4d7dff 0%, #2864f5 55%, #1a4ed6 100%);
+  box-shadow: 0 12px 28px rgba(40, 100, 245, 0.4);
+  flex-shrink: 0;
 }
 
 .medaxis-brand-copy {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  gap: 2px;
+}
+
+.medaxis-brand-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .medaxis-brand-copy strong {
-  color: #fff;
+  color: var(--mx-text-primary);
   font-size: 16px;
-  letter-spacing: 0.2px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
 }
 
-.medaxis-brand-copy span {
-  color: #8ea0c7;
+.medaxis-brand-copy > span {
+  color: var(--mx-text-secondary);
   font-size: 12px;
+  font-weight: 500;
+}
+
+.medaxis-platform-badge {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #dbe7ff !important;
+  background: rgba(40, 100, 245, 0.28);
+  border: 1px solid rgba(40, 100, 245, 0.45);
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
+.medaxis-search {
+  margin: 14px 12px 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--mx-divider);
+  border-radius: 12px;
+  padding: 0 10px;
+  height: 42px;
+  color: var(--mx-text-secondary);
+}
+
+.medaxis-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--mx-text-primary);
+  font: inherit;
+  font-size: 13px;
+}
+
+.medaxis-search input::placeholder {
+  color: #7f8fad;
+}
+
+.medaxis-search kbd {
+  font-size: 10px;
+  font-weight: 600;
+  color: #8fa0c0;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--mx-divider);
+  border-radius: 6px;
+  padding: 2px 6px;
+  white-space: nowrap;
 }
 
 .medaxis-shell.collapsed .medaxis-brand-copy,
-.medaxis-shell.collapsed .medaxis-section-label,
-.medaxis-shell.collapsed .medaxis-link span:not(.medaxis-link-icon),
-.medaxis-shell.collapsed .medaxis-sidebar-foot span {
+.medaxis-shell.collapsed .medaxis-search,
+.medaxis-shell.collapsed .medaxis-group-label,
+.medaxis-shell.collapsed .medaxis-chevron,
+.medaxis-shell.collapsed .medaxis-link span:not(.medaxis-link-icon):not(.tree-rail),
+.medaxis-shell.collapsed .medaxis-enterprise-copy,
+.medaxis-shell.collapsed .medaxis-enterprise-arrow {
+  display: none;
+}
+
+.medaxis-shell.collapsed .medaxis-search {
   display: none;
 }
 
 .medaxis-nav {
-  padding: 16px 12px 18px;
+  padding: 10px 10px 16px;
   overflow: auto;
   flex: 1;
 }
 
 .medaxis-section + .medaxis-section {
-  margin-top: 18px;
+  margin-top: 6px;
 }
 
-.medaxis-section-label {
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #7f91b8;
-  padding: 0 12px 8px;
-  font-weight: 700;
-}
-
-.medaxis-section ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 5px;
-}
-
-.medaxis-link {
+.medaxis-group {
+  width: 100%;
   display: flex;
   align-items: center;
-  gap: 11px;
-  padding: 10px 11px;
-  border-radius: 13px;
-  color: #d7e0f5;
-  text-decoration: none;
-  font-size: 13.5px;
-  font-weight: 500;
-  transition: background 0.16s ease, color 0.16s ease, transform 0.16s ease;
+  gap: 10px;
+  padding: 10px 10px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--mx-text-secondary);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.medaxis-group:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--mx-text-primary);
+}
+
+.medaxis-group.active {
+  color: var(--mx-text-primary);
+}
+
+.medaxis-group-label {
+  flex: 1;
+  min-width: 0;
+}
+
+.medaxis-chevron {
+  color: #7f8fad;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.medaxis-chevron.rotated {
+  transform: rotate(90deg);
 }
 
 .medaxis-link-icon {
@@ -133,39 +213,128 @@
   flex-shrink: 0;
 }
 
-.medaxis-link:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: #fff;
+.medaxis-link-icon.nested {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: transparent;
 }
 
-.medaxis-link:hover .medaxis-link-icon {
-  background: rgba(49, 95, 244, 0.22);
-  color: #fff;
+.medaxis-submenu-wrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.22s ease;
+}
+
+.medaxis-submenu-wrap.open {
+  grid-template-rows: 1fr;
+}
+
+.medaxis-submenu {
+  list-style: none;
+  margin: 0;
+  padding: 4px 0 6px 18px;
+  overflow: hidden;
+  display: grid;
+  gap: 2px;
+  position: relative;
+}
+
+.medaxis-submenu::before {
+  content: "";
+  position: absolute;
+  left: 24px;
+  top: 6px;
+  bottom: 10px;
+  width: 1px;
+  background: var(--mx-divider);
+}
+
+.medaxis-link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px 9px 12px;
+  border-radius: 12px;
+  color: var(--mx-text-secondary);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.medaxis-link .tree-rail {
+  position: absolute;
+  left: -6px;
+  width: 12px;
+  height: 1px;
+  background: var(--mx-divider);
+}
+
+.medaxis-link:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--mx-text-primary);
 }
 
 .medaxis-link.active {
-  background: linear-gradient(90deg, rgba(49, 95, 244, 0.28), rgba(49, 95, 244, 0.08));
+  background: linear-gradient(90deg, #2864f5 0%, #3b74f8 100%);
   color: #fff;
-  box-shadow: inset 0 0 0 1px rgba(109, 141, 255, 0.35);
+  box-shadow: 0 10px 22px rgba(40, 100, 245, 0.28);
 }
 
 .medaxis-link.active .medaxis-link-icon {
-  background: #315ff4;
+  background: rgba(255, 255, 255, 0.18);
   color: #fff;
-  box-shadow: 0 8px 18px rgba(49, 95, 244, 0.35);
 }
 
-.medaxis-sidebar-foot {
-  margin: 8px 14px 18px;
-  padding: 12px 14px;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+.medaxis-link.active .tree-rail {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.medaxis-enterprise-card {
+  margin: 8px 12px 16px;
+  padding: 14px;
+  border-radius: 16px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  color: #93a5cb;
-  font-size: 12px;
+  gap: 10px;
+  background: linear-gradient(135deg, #5b4dff 0%, #2864f5 55%, #1a4ed6 100%);
+  box-shadow: 0 14px 30px rgba(40, 100, 245, 0.35);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.medaxis-enterprise-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.18);
+  flex-shrink: 0;
+}
+
+.medaxis-enterprise-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.medaxis-enterprise-copy strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.medaxis-enterprise-copy span {
+  display: block;
+  font-size: 11px;
+  opacity: 0.86;
+}
+
+.medaxis-enterprise-arrow {
+  opacity: 0.85;
+  flex-shrink: 0;
 }
 
 .medaxis-main {
@@ -182,7 +351,7 @@
   justify-content: space-between;
   gap: 16px;
   padding: 0 22px;
-  background: rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.86);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--mx-border);
   position: sticky;
@@ -207,8 +376,8 @@
 }
 
 .medaxis-chip {
-  background: var(--mx-primary-soft);
-  color: var(--mx-primary-dark);
+  background: #eaf0ff;
+  color: #1f46d4;
   border: 1px solid #d4e0ff;
   border-radius: 999px;
   padding: 6px 12px;
@@ -226,12 +395,6 @@
   display: grid;
   place-items: center;
   cursor: pointer;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.mx-icon:hover {
-  border-color: #c7d5f8;
-  box-shadow: 0 6px 16px rgba(49, 95, 244, 0.1);
 }
 
 .mx-dot {
@@ -241,7 +404,7 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #315ff4;
+  background: #2864f5;
 }
 
 .medaxis-user {
@@ -265,7 +428,7 @@
   border-radius: 11px;
   display: grid;
   place-items: center;
-  background: linear-gradient(145deg, #4d74ff, #315ff4);
+  background: linear-gradient(145deg, #4d7dff, #2864f5);
   color: #fff;
   font-weight: 700;
   font-size: 12px;
@@ -338,14 +501,14 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #22c55e;
+  background: var(--mx-success);
   margin-right: 6px;
 }
 
 .medaxis-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(15, 27, 51, 0.45);
+  background: rgba(9, 19, 41, 0.5);
   z-index: 25;
 }
 
@@ -362,7 +525,7 @@
   .medaxis-sidebar {
     position: fixed;
     inset: 0 auto 0 0;
-    width: 280px;
+    width: 300px;
     transform: translateX(-105%);
     transition: transform 0.2s ease;
   }

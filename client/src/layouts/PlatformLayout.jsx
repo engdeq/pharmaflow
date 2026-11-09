@@ -1,63 +1,54 @@
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   Bell,
-  Building2,
   ChevronDown,
-  CreditCard,
-  Globe2,
-  LayoutDashboard,
+  ChevronRight,
+  Crown,
   LogOut,
   Menu as MenuIcon,
   Moon,
   PanelLeftClose,
   PanelLeftOpen,
-  Settings2,
-  Sparkles,
+  Search,
   Sun,
-  Users,
-  Wallet,
   X,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useTheme } from "../contexts/ThemeContext";
+import {
+  PLATFORM_NAV,
+  findActiveGroupIds,
+  pathMatches,
+  titleFromPath,
+} from "./platformNav";
 import "./PlatformLayout.css";
 
-const PLATFORM_NAV = [
-  {
-    section: "Overview",
-    items: [{ label: "Dashboard", to: "/platform", icon: LayoutDashboard, end: true }],
-  },
-  {
-    section: "Companies",
-    items: [
-      { label: "Companies", to: "/platform/companies", icon: Building2 },
-      { label: "Register Pharmacy", to: "/platform/companies?register=1", icon: Sparkles },
-      { label: "Domains", to: "/platform/domains", icon: Globe2 },
-    ],
-  },
-  {
-    section: "Configuration",
-    items: [
-      { label: "Global Menus", to: "/platform/global-menus", icon: MenuIcon },
-      { label: "Subscription Plans", to: "/platform/plans", icon: CreditCard },
-      { label: "Billing", to: "/platform/billing", icon: Wallet },
-    ],
-  },
-  {
-    section: "Access",
-    items: [{ label: "Platform Users", to: "/platform/users", icon: Users }],
-  },
-];
+const EXPANDED_KEY = "medaxis_platform_nav_expanded";
+
+function readExpanded() {
+  try {
+    const raw = sessionStorage.getItem(EXPANDED_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
 
 export default function PlatformLayout() {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
+  const searchRef = useRef(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [expanded, setExpanded] = useState(() => {
+    const saved = readExpanded();
+    return Array.isArray(saved) ? saved : PLATFORM_NAV.map((g) => g.id);
+  });
 
   const initials = useMemo(() => {
     const source = user?.fullName || user?.username || "P";
@@ -69,10 +60,52 @@ export default function PlatformLayout() {
       .toUpperCase();
   }, [user]);
 
-  const crumb = useMemo(() => {
-    const parts = location.pathname.split("/").filter(Boolean);
-    return parts.length ? parts[parts.length - 1].replace(/-/g, " ") : "platform";
-  }, [location.pathname]);
+  const crumb = titleFromPath(location.pathname);
+
+  useEffect(() => {
+    sessionStorage.setItem(EXPANDED_KEY, JSON.stringify(expanded));
+  }, [expanded]);
+
+  useEffect(() => {
+    const activeIds = findActiveGroupIds(location.pathname, location.search);
+    if (!activeIds.length) return;
+    setExpanded((prev) => Array.from(new Set([...prev, ...activeIds])));
+  }, [location.pathname, location.search]);
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "/") {
+        e.preventDefault();
+        if (collapsed) setCollapsed(false);
+        searchRef.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [collapsed]);
+
+  const filteredNav = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return PLATFORM_NAV;
+    return PLATFORM_NAV.map((group) => ({
+      ...group,
+      children: (group.children || []).filter(
+        (item) =>
+          item.label.toLowerCase().includes(q) ||
+          group.label.toLowerCase().includes(q) ||
+          String(item.to).toLowerCase().includes(q)
+      ),
+    })).filter((group) => group.children.length > 0);
+  }, [query]);
+
+  useEffect(() => {
+    if (!query.trim()) return;
+    setExpanded(filteredNav.map((g) => g.id));
+  }, [query, filteredNav]);
+
+  const toggleGroup = (id) => {
+    setExpanded((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -87,7 +120,10 @@ export default function PlatformLayout() {
         <div className="medaxis-brand">
           <div className="medaxis-mark">M</div>
           <div className="medaxis-brand-copy">
-            <strong>MedAxis</strong>
+            <div className="medaxis-brand-row">
+              <strong>MedAxis</strong>
+              <span className="medaxis-platform-badge">Platform</span>
+            </div>
             <span>Control Center</span>
           </div>
           <button type="button" className="mx-icon mobile-only" onClick={() => setMobileOpen(false)}>
@@ -95,38 +131,86 @@ export default function PlatformLayout() {
           </button>
         </div>
 
+        <div className="medaxis-search">
+          <Search size={16} />
+          <input
+            ref={searchRef}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search menu..."
+            aria-label="Search menu"
+          />
+          <kbd>Ctrl /</kbd>
+        </div>
+
         <nav className="medaxis-nav">
-          {PLATFORM_NAV.map((group) => (
-            <div key={group.section} className="medaxis-section">
-              <div className="medaxis-section-label">{group.section}</div>
-              <ul>
-                {group.items.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <li key={item.to}>
-                      <NavLink
-                        to={item.to}
-                        end={item.end}
-                        title={collapsed ? item.label : undefined}
-                        className={({ isActive }) => `medaxis-link${isActive ? " active" : ""}`}
-                        onClick={() => setMobileOpen(false)}
-                      >
-                        <span className="medaxis-link-icon">
-                          <Icon size={17} />
-                        </span>
-                        <span>{item.label}</span>
-                      </NavLink>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          ))}
+          {filteredNav.map((group) => {
+            const Icon = group.icon;
+            const isOpen = expanded.includes(group.id) || Boolean(query.trim());
+            const groupActive = (group.children || []).some((item) =>
+              pathMatches(item.to, location.pathname, location.search)
+            );
+
+            return (
+              <div
+                key={group.id}
+                className={`medaxis-section${isOpen ? " open" : ""}${groupActive ? " has-active" : ""}`}
+              >
+                <button
+                  type="button"
+                  className={`medaxis-group${groupActive ? " active" : ""}`}
+                  onClick={() => toggleGroup(group.id)}
+                  title={collapsed ? group.label : undefined}
+                >
+                  <span className="medaxis-link-icon">
+                    <Icon size={18} />
+                  </span>
+                  <span className="medaxis-group-label">{group.label}</span>
+                  <ChevronRight
+                    size={16}
+                    className={`medaxis-chevron${isOpen ? " rotated" : ""}`}
+                  />
+                </button>
+
+                <div className={`medaxis-submenu-wrap${isOpen ? " open" : ""}`}>
+                  <ul className="medaxis-submenu">
+                    {(group.children || []).map((item) => {
+                      const ChildIcon = item.icon;
+                      const active = pathMatches(item.to, location.pathname, location.search);
+                      return (
+                        <li key={`${item.to}-${item.label}`}>
+                          <NavLink
+                            to={item.to}
+                            end={item.end}
+                            title={collapsed ? item.label : undefined}
+                            className={() => `medaxis-link${active ? " active" : ""}`}
+                            onClick={() => setMobileOpen(false)}
+                          >
+                            <span className="tree-rail" aria-hidden="true" />
+                            <span className="medaxis-link-icon nested">
+                              <ChildIcon size={16} />
+                            </span>
+                            <span>{item.label}</span>
+                          </NavLink>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              </div>
+            );
+          })}
         </nav>
 
-        <div className="medaxis-sidebar-foot">
-          <Settings2 size={14} />
-          <span>Pharmacy SaaS Admin</span>
+        <div className="medaxis-enterprise-card">
+          <div className="medaxis-enterprise-icon">
+            <Crown size={16} />
+          </div>
+          <div className="medaxis-enterprise-copy">
+            <strong>MedAxis Enterprise</strong>
+            <span>Platform Management Suite</span>
+          </div>
+          <ChevronRight size={16} className="medaxis-enterprise-arrow" />
         </div>
       </aside>
 
@@ -147,7 +231,7 @@ export default function PlatformLayout() {
               <MenuIcon size={18} />
             </button>
             <div className="medaxis-crumbs">
-              <span>MedAxis</span> / <strong style={{ textTransform: "capitalize" }}>{crumb}</strong>
+              <span>MedAxis</span> / <strong>{crumb}</strong>
             </div>
           </div>
 

@@ -30,6 +30,7 @@ import PlatformGlobalMenusPage from "../modules/platform/PlatformGlobalMenusPage
 import PlatformPlansPage from "../modules/platform/PlatformPlansPage";
 import PlatformBillingPage from "../modules/platform/PlatformBillingPage";
 import PlatformUsersPage from "../modules/platform/PlatformUsersPage";
+import PlatformPlaceholderPage from "../modules/platform/PlatformPlaceholderPage";
 import TenantEntry from "./TenantEntry";
 
 function PlatformOnly({ children }) {
@@ -72,6 +73,7 @@ export default function AppRouter() {
                   <Route path="/platform/plans" element={<PlatformPlansPage />} />
                   <Route path="/platform/billing" element={<PlatformBillingPage />} />
                   <Route path="/platform/users" element={<PlatformUsersPage />} />
+                  <Route path="/platform/*" element={<PlatformPlaceholderPage />} />
                 </Route>
 
                 <Route
