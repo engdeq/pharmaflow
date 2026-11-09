@@ -76,12 +76,23 @@ async function provisionCompany({
     status,
     branding: {
       pharmacyName: companyInput.name,
-      logo: companyInput.logo || "",
-      tagline: companyInput.tagline || "",
-      primaryColor: companyInput.primaryColor || "#748CF8",
-      secondaryColor: companyInput.secondaryColor || "#5A6FD8",
-      sidebarActiveColor: companyInput.primaryColor || "#748CF8",
-      buttonColor: companyInput.primaryColor || "#748CF8",
+      logo: companyInput.logo || companyInput.branding?.logo || "",
+      tagline: companyInput.tagline || companyInput.branding?.tagline || "",
+      primaryColor: companyInput.branding?.primaryColor || companyInput.primaryColor || "#748CF8",
+      secondaryColor: companyInput.branding?.secondaryColor || companyInput.secondaryColor || "#5A6FD8",
+      sidebarColor: companyInput.branding?.sidebarColor || "#FFFFFF",
+      sidebarActiveColor:
+        companyInput.branding?.sidebarActiveColor ||
+        companyInput.branding?.primaryColor ||
+        companyInput.primaryColor ||
+        "#748CF8",
+      headerColor: companyInput.branding?.headerColor || "#FFFFFF",
+      buttonColor:
+        companyInput.branding?.buttonColor ||
+        companyInput.branding?.primaryColor ||
+        companyInput.primaryColor ||
+        "#748CF8",
+      backgroundColor: companyInput.branding?.backgroundColor || "#F5F7FB",
     },
     settings: {
       currency: companyInput.currency || "USD",

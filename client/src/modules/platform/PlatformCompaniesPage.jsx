@@ -6,6 +6,28 @@ import StatusSwitch from "../../components/ui/StatusSwitch";
 import { api } from "../../services/api";
 import { useToast } from "../../contexts/ToastContext";
 
+const DEFAULT_BRANDING = {
+  logo: "",
+  tagline: "",
+  primaryColor: "#748CF8",
+  secondaryColor: "#5A6FD8",
+  sidebarColor: "#FFFFFF",
+  sidebarActiveColor: "#748CF8",
+  headerColor: "#FFFFFF",
+  buttonColor: "#748CF8",
+  backgroundColor: "#F5F7FB",
+};
+
+const COLOR_FIELDS = [
+  ["primaryColor", "Primary Color"],
+  ["secondaryColor", "Secondary Color"],
+  ["sidebarColor", "Sidebar Color"],
+  ["sidebarActiveColor", "Sidebar Active"],
+  ["headerColor", "Header Color"],
+  ["buttonColor", "Button Color"],
+  ["backgroundColor", "Background Color"],
+];
+
 const emptyForm = {
   name: "",
   slug: "",
@@ -16,6 +38,7 @@ const emptyForm = {
   city: "",
   country: "",
   plan: "trial",
+  branding: { ...DEFAULT_BRANDING },
   ownerFullName: "",
   ownerUsername: "",
   ownerEmail: "",
@@ -50,7 +73,7 @@ export default function PlatformCompaniesPage() {
 
   const openCreate = () => {
     setEditing(null);
-    setForm(emptyForm);
+    setForm({ ...emptyForm, branding: { ...DEFAULT_BRANDING } });
     setCreatedHint(null);
     setOpen(true);
   };
@@ -69,12 +92,21 @@ export default function PlatformCompaniesPage() {
       city: c.city || "",
       country: c.country || "",
       plan: c.subscription?.plan || "trial",
+      branding: { ...DEFAULT_BRANDING, ...(c.branding || {}), logo: c.logo || c.branding?.logo || "" },
     });
     setOpen(true);
   };
 
+  const setBrand = (key, value) => {
+    setForm((p) => ({ ...p, branding: { ...p.branding, [key]: value } }));
+  };
+
   const save = async () => {
     try {
+      const brandingPayload = {
+        pharmacyName: form.name,
+        ...form.branding,
+      };
       if (editing) {
         await api(`/platform/companies/${editing._id}`, {
           method: "PUT",
@@ -88,7 +120,8 @@ export default function PlatformCompaniesPage() {
             city: form.city,
             country: form.country,
             plan: form.plan,
-            branding: { pharmacyName: form.name },
+            logo: form.branding.logo,
+            branding: brandingPayload,
           },
           successMessage: "Company updated",
         });
@@ -96,15 +129,16 @@ export default function PlatformCompaniesPage() {
       } else {
         const res = await api("/platform/companies", {
           method: "POST",
-          body: form,
+          body: {
+            ...form,
+            logo: form.branding.logo,
+            tagline: form.branding.tagline,
+            branding: brandingPayload,
+          },
           successMessage: "Pharmacy registered",
         });
         setCreatedHint(res.data?.loginHint || null);
-        load();
         if (!res.data?.loginHint) setOpen(false);
-        else {
-          /* keep modal open to show login hint */
-        }
       }
       load();
       if (editing) setOpen(false);
@@ -270,6 +304,35 @@ export default function PlatformCompaniesPage() {
                 <option value="enterprise">Enterprise</option>
               </select>
             </label>
+
+            <div style={{ gridColumn: "1 / -1", fontWeight: 700, marginTop: 8 }}>
+              Branding Template (colors / logo)
+            </div>
+            <label>
+              Tagline
+              <input value={form.branding.tagline || ""} onChange={(e) => setBrand("tagline", e.target.value)} />
+            </label>
+            <label>
+              Logo URL
+              <input
+                value={form.branding.logo || ""}
+                placeholder="https://..."
+                onChange={(e) => setBrand("logo", e.target.value)}
+              />
+            </label>
+            {COLOR_FIELDS.map(([key, label]) => (
+              <label key={key}>
+                {label}
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <input
+                    type="color"
+                    value={form.branding[key] || "#748CF8"}
+                    onChange={(e) => setBrand(key, e.target.value)}
+                  />
+                  <input value={form.branding[key] || ""} onChange={(e) => setBrand(key, e.target.value)} />
+                </div>
+              </label>
+            ))}
 
             {!editing ? (
               <>
