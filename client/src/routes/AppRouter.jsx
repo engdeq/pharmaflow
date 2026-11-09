@@ -21,6 +21,7 @@ import PermissionsPage from "../modules/permissions/PermissionsPage";
 import MenusPage from "../modules/menus/MenusPage";
 import ReportsPage from "../modules/reports/ReportsPage";
 import SettingsPage from "../modules/settings/SettingsPage";
+import BrandingPage from "../modules/settings/BrandingPage";
 import AuditPage from "../modules/audit/AuditPage";
 import PlatformDashboard from "../modules/platform/PlatformDashboard";
 import PlatformCompaniesPage from "../modules/platform/PlatformCompaniesPage";
@@ -55,6 +56,7 @@ export default function AppRouter() {
                   <Route path="/menus" element={<MenusPage />} />
                   <Route path="/reports" element={<ReportsPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
+                  <Route path="/settings/branding" element={<BrandingPage />} />
                   <Route path="/audit" element={<AuditPage />} />
                 </Route>
               </Route>

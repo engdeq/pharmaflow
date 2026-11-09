@@ -4,7 +4,7 @@ import "./AuthCard.css";
 
 const ANIMATION_MS = 1800;
 
-const emptyLogin = { username: "", password: "" };
+const emptyLogin = { companySlug: "", username: "", password: "" };
 const emptyRegister = { username: "", email: "", password: "" };
 
 export default function AuthCard({ onLoginSuccess }) {
@@ -117,6 +117,19 @@ export default function AuthCard({ onLoginSuccess }) {
         <div className="form-box login" aria-hidden={isRegister}>
           <form onSubmit={handleLoginSubmit} noValidate>
             <h1>Login</h1>
+
+            <div className="input-box">
+              <input
+                type="text"
+                name="companySlug"
+                placeholder="Pharmacy Code (or platform)"
+                autoComplete="organization"
+                value={loginForm.companySlug}
+                onChange={handleLoginChange}
+                disabled={isAnimating || loginLoading}
+              />
+              <i className="bx bxs-buildings" aria-hidden="true" />
+            </div>
 
             <div className="input-box">
               <input

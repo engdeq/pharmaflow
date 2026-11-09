@@ -1,14 +1,36 @@
 import { useEffect, useState } from "react";
 import PageHeader from "../../components/ui/PageHeader";
+import Modal from "../../components/ui/Modal";
 import Skeleton from "../../components/ui/Skeleton";
 import StatusSwitch from "../../components/ui/StatusSwitch";
 import { api } from "../../services/api";
 import { useToast } from "../../contexts/ToastContext";
 
+const emptyForm = {
+  name: "",
+  slug: "",
+  legalName: "",
+  phone: "",
+  email: "",
+  address: "",
+  city: "",
+  country: "",
+  plan: "trial",
+  ownerFullName: "",
+  ownerUsername: "",
+  ownerEmail: "",
+  ownerPhone: "",
+  ownerPassword: "",
+};
+
 export default function PlatformCompaniesPage() {
   const toast = useToast();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const [form, setForm] = useState(emptyForm);
+  const [createdHint, setCreatedHint] = useState(null);
 
   const load = async () => {
     setLoading(true);
@@ -26,6 +48,71 @@ export default function PlatformCompaniesPage() {
     load();
   }, []);
 
+  const openCreate = () => {
+    setEditing(null);
+    setForm(emptyForm);
+    setCreatedHint(null);
+    setOpen(true);
+  };
+
+  const openEdit = (c) => {
+    setEditing(c);
+    setCreatedHint(null);
+    setForm({
+      ...emptyForm,
+      name: c.name || "",
+      slug: c.slug || "",
+      legalName: c.legalName || "",
+      phone: c.phone || "",
+      email: c.email || "",
+      address: c.address || "",
+      city: c.city || "",
+      country: c.country || "",
+      plan: c.subscription?.plan || "trial",
+    });
+    setOpen(true);
+  };
+
+  const save = async () => {
+    try {
+      if (editing) {
+        await api(`/platform/companies/${editing._id}`, {
+          method: "PUT",
+          body: {
+            name: form.name,
+            slug: form.slug,
+            legalName: form.legalName,
+            phone: form.phone,
+            email: form.email,
+            address: form.address,
+            city: form.city,
+            country: form.country,
+            plan: form.plan,
+            branding: { pharmacyName: form.name },
+          },
+          successMessage: "Company updated",
+        });
+        setOpen(false);
+      } else {
+        const res = await api("/platform/companies", {
+          method: "POST",
+          body: form,
+          successMessage: "Pharmacy registered",
+        });
+        setCreatedHint(res.data?.loginHint || null);
+        load();
+        if (!res.data?.loginHint) setOpen(false);
+        else {
+          /* keep modal open to show login hint */
+        }
+      }
+      load();
+      if (editing) setOpen(false);
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
   const setStatus = async (company, status) => {
     try {
       await api(`/platform/companies/${company._id}/status`, {
@@ -41,7 +128,15 @@ export default function PlatformCompaniesPage() {
 
   return (
     <div>
-      <PageHeader title="Companies" subtitle="Register, activate, or suspend pharmacy tenants" />
+      <PageHeader
+        title="Companies"
+        subtitle="Diiwaangeli pharmacy, fur/xir, magac, subscription — milkiiluhu wuxuu login ku geli karaa code-kiisa"
+        actions={
+          <button type="button" className="btn btn-primary" onClick={openCreate}>
+            Register Pharmacy
+          </button>
+        }
+      />
       <div className="card">
         {loading ? (
           <Skeleton />
@@ -51,7 +146,8 @@ export default function PlatformCompaniesPage() {
               <thead>
                 <tr>
                   <th>Pharmacy</th>
-                  <th>Email</th>
+                  <th>Code / Slug</th>
+                  <th>Owner</th>
                   <th>Plan</th>
                   <th>Status</th>
                   <th>Active</th>
@@ -63,9 +159,15 @@ export default function PlatformCompaniesPage() {
                   <tr key={c._id}>
                     <td>
                       <strong>{c.name}</strong>
-                      <div style={{ color: "var(--muted)", fontSize: 12 }}>{c.city || c.country}</div>
+                      <div style={{ color: "var(--muted)", fontSize: 12 }}>{c.email}</div>
                     </td>
-                    <td>{c.email}</td>
+                    <td>
+                      <code>{c.slug || "-"}</code>
+                    </td>
+                    <td>
+                      {c.ownerUserId?.username || "-"}
+                      <div style={{ color: "var(--muted)", fontSize: 12 }}>{c.ownerUserId?.email}</div>
+                    </td>
                     <td>{c.subscription?.plan || "-"}</td>
                     <td>
                       <span className={`badge badge-${c.status === "active" ? "success" : "warning"}`}>
@@ -79,13 +181,9 @@ export default function PlatformCompaniesPage() {
                       />
                     </td>
                     <td>
-                      {c.status === "pending" ? (
-                        <button type="button" className="btn btn-primary" onClick={() => setStatus(c, "active")}>
-                          Approve
-                        </button>
-                      ) : (
-                        "-"
-                      )}
+                      <button type="button" className="btn btn-ghost" onClick={() => openEdit(c)}>
+                        Edit
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -94,6 +192,129 @@ export default function PlatformCompaniesPage() {
           </div>
         )}
       </div>
+
+      <Modal
+        open={open}
+        title={editing ? "Edit Pharmacy" : "Register Pharmacy"}
+        onClose={() => setOpen(false)}
+        footer={
+          <>
+            <button type="button" className="btn btn-ghost" onClick={() => setOpen(false)}>
+              {createdHint ? "Close" : "Cancel"}
+            </button>
+            {!createdHint ? (
+              <button type="button" className="btn btn-primary" onClick={save}>
+                Save
+              </button>
+            ) : null}
+          </>
+        }
+      >
+        {createdHint ? (
+          <div className="step-box" style={{ display: "grid", gap: 8 }}>
+            <strong>Pharmacy ready — give these to the owner:</strong>
+            <div>
+              Pharmacy Code: <code>{createdHint.companySlug}</code>
+            </div>
+            <div>
+              Username: <code>{createdHint.username}</code>
+            </div>
+            <p style={{ color: "var(--muted)", margin: 0 }}>
+              Login page: geli Pharmacy Code + Username + Password. Ka dib owner-ku wuxuu Users ka sameyn karaa.
+            </p>
+          </div>
+        ) : (
+          <div className="form-grid">
+            <label>
+              Pharmacy Name
+              <input value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} />
+            </label>
+            <label>
+              Pharmacy Code (slug / subdomain)
+              <input
+                value={form.slug}
+                placeholder="e.g. deq-pharma"
+                onChange={(e) => setForm((p) => ({ ...p, slug: e.target.value.toLowerCase() }))}
+              />
+            </label>
+            <label>
+              Legal Name
+              <input value={form.legalName} onChange={(e) => setForm((p) => ({ ...p, legalName: e.target.value }))} />
+            </label>
+            <label>
+              Email
+              <input value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} />
+            </label>
+            <label>
+              Phone
+              <input value={form.phone} onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))} />
+            </label>
+            <label>
+              City
+              <input value={form.city} onChange={(e) => setForm((p) => ({ ...p, city: e.target.value }))} />
+            </label>
+            <label>
+              Country
+              <input value={form.country} onChange={(e) => setForm((p) => ({ ...p, country: e.target.value }))} />
+            </label>
+            <label>
+              Address
+              <input value={form.address} onChange={(e) => setForm((p) => ({ ...p, address: e.target.value }))} />
+            </label>
+            <label>
+              Subscription Plan
+              <select value={form.plan} onChange={(e) => setForm((p) => ({ ...p, plan: e.target.value }))}>
+                <option value="trial">Trial</option>
+                <option value="starter">Starter</option>
+                <option value="professional">Professional</option>
+                <option value="enterprise">Enterprise</option>
+              </select>
+            </label>
+
+            {!editing ? (
+              <>
+                <div style={{ gridColumn: "1 / -1", fontWeight: 700, marginTop: 8 }}>Owner Admin Account</div>
+                <label>
+                  Owner Full Name
+                  <input
+                    value={form.ownerFullName}
+                    onChange={(e) => setForm((p) => ({ ...p, ownerFullName: e.target.value }))}
+                  />
+                </label>
+                <label>
+                  Owner Username
+                  <input
+                    value={form.ownerUsername}
+                    onChange={(e) => setForm((p) => ({ ...p, ownerUsername: e.target.value }))}
+                  />
+                </label>
+                <label>
+                  Owner Email
+                  <input
+                    value={form.ownerEmail}
+                    onChange={(e) => setForm((p) => ({ ...p, ownerEmail: e.target.value }))}
+                  />
+                </label>
+                <label>
+                  Owner Phone
+                  <input
+                    value={form.ownerPhone}
+                    onChange={(e) => setForm((p) => ({ ...p, ownerPhone: e.target.value }))}
+                  />
+                </label>
+                <label>
+                  Owner Password
+                  <input
+                    type="password"
+                    value={form.ownerPassword}
+                    onChange={(e) => setForm((p) => ({ ...p, ownerPassword: e.target.value }))}
+                  />
+                </label>
+              </>
+            ) : null}
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

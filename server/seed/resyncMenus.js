@@ -251,6 +251,17 @@ async function seedHierarchicalMenus(tenantId) {
     url: "/settings",
     order: 6,
     permissionKey: "settings.manage",
+    moduleKey: "settings",
+    parent: admin._id,
+  });
+  await create({
+    name: "branding",
+    label: "Branding",
+    icon: "Palette",
+    url: "/settings/branding",
+    order: 7,
+    permissionKey: "branding.manage",
+    moduleKey: "settings",
     parent: admin._id,
   });
 

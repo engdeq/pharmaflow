@@ -50,6 +50,14 @@ async function migrateToMultiTenant() {
   const existingCompanies = await Company.countDocuments();
   if (existingCompanies > 0) {
     console.log("Migration skip: companies already exist.");
+    // Backfill missing slugs
+    const { uniqueSlug } = require("../services/companyService");
+    const missing = await Company.find({ $or: [{ slug: null }, { slug: "" }, { slug: { $exists: false } }] });
+    for (const c of missing) {
+      c.slug = await uniqueSlug(c.name || "pharmacy");
+      await c.save();
+      console.log(`Backfilled slug for ${c.name}: ${c.slug}`);
+    }
     await ensurePlatformAdmin();
     return { skipped: true };
   }
@@ -57,8 +65,10 @@ async function migrateToMultiTenant() {
   const settings = (await Settings.findOne().lean()) || {};
   const companyName = settings.pharmacyName || "Default Pharmacy";
 
+  const { uniqueSlug } = require("../services/companyService");
   const company = await Company.create({
     name: companyName,
+    slug: await uniqueSlug(companyName || "default-pharmacy"),
     legalName: companyName,
     phone: settings.phone || "",
     email: settings.email || "admin@pharmacy.local",

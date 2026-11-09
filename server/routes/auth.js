@@ -72,11 +72,43 @@ router.post(
     const errors = validationResult(req);
     if (!errors.isEmpty()) return fail(res, errors.array()[0].msg, 400);
 
-    const { username, password } = req.body;
-    const user = await User.findOne({ username }).populate({
-      path: "roles",
-      populate: { path: "permissions" },
-    });
+    const { username, password, companySlug } = req.body;
+    const Company = require("../models/Company");
+    let user = null;
+
+    const slug = String(companySlug || "").trim().toLowerCase();
+
+    // Platform operator login (no pharmacy code)
+    if (!slug || slug === "platform") {
+      user = await User.findOne({
+        username,
+        isPlatformAdmin: true,
+      }).populate({ path: "roles", populate: { path: "permissions" } });
+    }
+
+    // Pharmacy tenant login via company code/slug
+    if (!user && slug && slug !== "platform") {
+      const company = await Company.findOne({ slug }).lean();
+      if (!company) return fail(res, "Pharmacy code not found.", 404);
+      user = await User.findOne({
+        username,
+        tenantId: company._id,
+        isPlatformAdmin: { $ne: true },
+      }).populate({ path: "roles", populate: { path: "permissions" } });
+    }
+
+    // Fallback: unique username lookup (legacy / single match)
+    if (!user && !slug) {
+      const matches = await User.find({ username, isPlatformAdmin: { $ne: true } }).limit(2);
+      if (matches.length === 1) {
+        user = await User.findById(matches[0]._id).populate({
+          path: "roles",
+          populate: { path: "permissions" },
+        });
+      } else if (matches.length > 1) {
+        return fail(res, "Enter your Pharmacy Code to login.", 400);
+      }
+    }
 
     if (!user) return fail(res, "Invalid username or password.", 401);
 
@@ -91,17 +123,19 @@ router.post(
       if (!user.tenantId) {
         return fail(res, "No company assigned to this account.", 403);
       }
-      const Company = require("../models/Company");
       const company = await Company.findById(user.tenantId).lean();
       if (!company) return fail(res, "Company not found.", 403);
       if (company.status === "suspended") {
-        return fail(res, "Company account is suspended.", 403);
+        return fail(res, "Company account is suspended. Contact platform support.", 403);
       }
       if (company.status === "pending") {
         return fail(res, "Company registration is pending approval.", 403);
       }
       if (company.status !== "active") {
         return fail(res, "Company is not active.", 403);
+      }
+      if (company.subscription?.status === "suspended") {
+        return fail(res, "Company subscription is suspended.", 403);
       }
     }
 
@@ -152,6 +186,7 @@ router.get(
         ? {
             id: req.company._id,
             name: req.company.name,
+            slug: req.company.slug,
             status: req.company.status,
             logo: req.company.logo || req.company.branding?.logo || "",
             branding: req.company.branding || {},

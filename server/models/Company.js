@@ -59,6 +59,15 @@ const subscriptionSchema = new mongoose.Schema(
 const companySchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
+    /** Unique code used for login + future subdomain (e.g. acme → acme.domain) */
+    slug: {
+      type: String,
+      required: true,
+      trim: true,
+      lowercase: true,
+      unique: true,
+      match: [/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Invalid company slug"],
+    },
     legalName: { type: String, default: "" },
     registrationNumber: { type: String, default: "" },
     licenseNumber: { type: String, default: "" },
@@ -109,5 +118,16 @@ const companySchema = new mongoose.Schema(
 companySchema.index({ email: 1 });
 companySchema.index({ name: 1 });
 companySchema.index({ status: 1, createdAt: -1 });
+
+companySchema.pre("validate", function ensureSlug(next) {
+  if (!this.slug && this.name) {
+    this.slug = String(this.name)
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 40);
+  }
+  next();
+});
 
 module.exports = mongoose.model("Company", companySchema);

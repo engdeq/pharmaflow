@@ -212,7 +212,8 @@ async function seedDatabase() {
   await ensureRolesForTenant(company._id, allPerms, permMap);
 
   const menuCount = await Menu.countDocuments({ tenantId: company._id });
-  if (menuCount === 0) {
+  const hasBranding = await Menu.exists({ tenantId: company._id, name: "branding" });
+  if (menuCount === 0 || !hasBranding) {
     await seedHierarchicalMenus(company._id);
     console.log("Menus seeded for company");
   }
